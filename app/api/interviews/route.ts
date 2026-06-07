@@ -11,12 +11,8 @@ export async function POST() {
   if (!session) {
     return Response.json({ error: 'Not authenticated.' }, { status: 401 });
   }
-  if (session.profile.role !== 'interviewer') {
-    return Response.json(
-      { error: 'Only interviewers can create interviews.' },
-      { status: 403 },
-    );
-  }
+  // Any authenticated user can host an interview. Role in a room is derived from
+  // ownership (creator => interviewer; whoever opens the invite => candidate).
 
   try {
     const interview = await createInterview(session.userId);

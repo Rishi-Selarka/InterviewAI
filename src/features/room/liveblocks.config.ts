@@ -9,7 +9,9 @@
 
 export type Role = 'interviewer' | 'candidate';
 
-export type SupportedLanguage = 'javascript' | 'python';
+// These ids double as Monaco language ids (javascript/python/java/c/cpp are all
+// valid Monaco languages), so no mapping is needed for the editor.
+export type SupportedLanguage = 'javascript' | 'python' | 'java' | 'c' | 'cpp';
 
 // The browser-usable public key. Throwing early gives a clear error instead of a
 // confusing "missing room" failure deep inside Liveblocks.
@@ -27,6 +29,24 @@ export type ProctoringState = {
   lookingAway: boolean;
   /** How many distinct look-away events have occurred this session. */
   lookAwayCount: number;
+  /** Candidate's interview tab/window is currently hidden or unfocused. */
+  tabHidden: boolean;
+  /** How many times the candidate switched away from the interview tab/window. */
+  tabSwitchCount: number;
+  /** More than one face is currently visible in the candidate's camera. */
+  multipleFaces: boolean;
+  /** No face is currently visible (camera off / left frame). */
+  noFace: boolean;
+};
+
+/** Default proctoring state — every field defined so readers never hit undefined. */
+export const DEFAULT_PROCTORING: ProctoringState = {
+  lookingAway: false,
+  lookAwayCount: 0,
+  tabHidden: false,
+  tabSwitchCount: 0,
+  multipleFaces: false,
+  noFace: false,
 };
 
 declare global {
@@ -49,6 +69,8 @@ declare global {
       output: string;
       // True while a run is in flight (so the other side sees "Running…").
       running: boolean;
+      // True once the interviewer ends the session — both sides show the end screen.
+      ended: boolean;
     };
   }
 }

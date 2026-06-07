@@ -49,36 +49,27 @@ export default function NewInterviewButton() {
 
   if (roomId) {
     return (
-      <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-4 dark:border-indigo-500/30 dark:bg-indigo-500/10">
-        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-          Interview <span className="font-mono">{roomId}</span> created. Share this
-          link with your candidate:
+      <div className="card w-full border-brand/30 bg-brand/5 p-4 sm:max-w-md">
+        <p className="text-sm font-medium text-zinc-100">
+          Interview <span className="font-mono text-brandbright">{roomId}</span> created. Share
+          this link with your candidate:
         </p>
         <div className="mt-3 flex flex-col gap-2 sm:flex-row">
           <input
             readOnly
             value={inviteLink}
             onFocus={(e) => e.currentTarget.select()}
-            className="flex-1 rounded-lg border border-zinc-300 bg-white px-3 py-2 font-mono text-xs text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+            className="flex-1 rounded-xl border border-line bg-ink2 px-3 py-2 font-mono text-xs text-zinc-300"
           />
-          <button
-            onClick={copy}
-            className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
-          >
+          <button onClick={copy} className="btn-ghost px-4 py-2">
             {copied ? '✓ Copied' : 'Copy'}
           </button>
         </div>
         <div className="mt-3 flex gap-2">
-          <button
-            onClick={() => router.push(`/room/${roomId}`)}
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
-          >
+          <button onClick={() => router.push(`/room/${roomId}`)} className="btn-primary px-4 py-2">
             Enter room →
           </button>
-          <button
-            onClick={() => setRoomId(null)}
-            className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-          >
+          <button onClick={() => setRoomId(null)} className="btn-ghost px-4 py-2">
             New interview
           </button>
         </div>
@@ -88,14 +79,10 @@ export default function NewInterviewButton() {
 
   return (
     <div>
-      <button
-        onClick={create}
-        disabled={busy}
-        className="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-60"
-      >
+      <button onClick={create} disabled={busy} className="btn-primary">
         {busy ? 'Creating…' : '+ New interview'}
       </button>
-      {error && <p className="mt-2 text-sm text-rose-600 dark:text-rose-300">{error}</p>}
+      {error && <p className="mt-2 text-sm text-rose-300">{error}</p>}
     </div>
   );
 }

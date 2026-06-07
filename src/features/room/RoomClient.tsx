@@ -17,6 +17,8 @@ interface Props {
   role: Role;
   name: string;
   interviewId: string;
+  /** No-login demo mode: skip DB-backed persistence (scoring/recording/proctoring stats). */
+  guest?: boolean;
 }
 
 function Loading() {
@@ -27,7 +29,7 @@ function Loading() {
   );
 }
 
-export default function RoomClient({ roomId, role, name, interviewId }: Props) {
+export default function RoomClient({ roomId, role, name, interviewId, guest }: Props) {
   if (!LIVEBLOCKS_PUBLIC_KEY) {
     return (
       <div className="flex h-[100dvh] items-center justify-center bg-zinc-950 p-6 text-center text-sm text-rose-300">
@@ -47,10 +49,17 @@ export default function RoomClient({ roomId, role, name, interviewId }: Props) {
           language: 'javascript',
           output: '',
           running: false,
+          ended: false,
         }}
       >
         <ClientSideSuspense fallback={<Loading />}>
-          <RoomLayout roomId={roomId} role={role} name={name} interviewId={interviewId} />
+          <RoomLayout
+            roomId={roomId}
+            role={role}
+            name={name}
+            interviewId={interviewId}
+            guest={guest}
+          />
         </ClientSideSuspense>
       </RoomProvider>
     </LiveblocksProvider>

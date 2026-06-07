@@ -96,11 +96,17 @@ export async function listInterviewsForInterviewer(interviewerId: string): Promi
   return (data as Interview[]) ?? [];
 }
 
-/** Claim a candidate seat if it's still open. Idempotent for the same user. */
+/**
+ * Claim a candidate seat if it's still open. Idempotent for the same user.
+ * Returns the CURRENT interview state (never stale): if this user won the seat
+ * the row has `candidate_id === userId`; if another user won the race it has
+ * their id; `null` only if the interview no longer exists. The caller must check
+ * `result.candidate_id === userId` before treating this user as the candidate.
+ */
 export async function claimCandidate(
   interview: Interview,
   userId: string,
-): Promise<Interview> {
+): Promise<Interview | null> {
   if (interview.candidate_id) return interview;
   const admin = createAdminClient();
   const { data } = await admin
@@ -110,8 +116,10 @@ export async function claimCandidate(
     .is('candidate_id', null) // guard against a race: only claim if still open
     .select('*')
     .maybeSingle();
-  // If the race lost, re-read to return the current state.
-  return (data as Interview) ?? (await getInterviewByRoomId(interview.room_id)) ?? interview;
+  if (data) return data as Interview; // we won the seat
+  // We lost the race (or it was already claimed) — return the authoritative
+  // current state so the caller can see who actually holds the seat.
+  return getInterviewById(interview.id);
 }
 
 /** Mark an interview active + stamp started_at the first time. */

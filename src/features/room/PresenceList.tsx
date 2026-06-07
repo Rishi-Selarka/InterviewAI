@@ -25,12 +25,10 @@ export default function PresenceList() {
     <div className="flex items-center gap-3">
       {/* Self */}
       {self && (
-        <div className="flex items-center gap-1.5 rounded-full bg-zinc-100 px-2.5 py-1 text-xs dark:bg-zinc-800">
+        <div className="flex items-center gap-1.5 rounded-full bg-surface px-2.5 py-1 text-xs">
           <Dot color={connected ? 'bg-emerald-500' : 'bg-amber-500'} />
-          <span className="font-medium text-zinc-700 dark:text-zinc-200">
-            {self.presence.name} (you)
-          </span>
-          <span className="text-zinc-400">· {roleLabel(self.presence.role)}</span>
+          <span className="font-medium text-zinc-200">{self.presence.name} (you)</span>
+          <span className="text-faint">· {roleLabel(self.presence.role)}</span>
         </div>
       )}
 
@@ -38,18 +36,16 @@ export default function PresenceList() {
       {others.map((o) => (
         <div
           key={o.connectionId}
-          className="flex items-center gap-1.5 rounded-full bg-zinc-100 px-2.5 py-1 text-xs dark:bg-zinc-800"
+          className="flex items-center gap-1.5 rounded-full bg-surface px-2.5 py-1 text-xs"
         >
           <Dot color="bg-emerald-500" />
-          <span className="font-medium text-zinc-700 dark:text-zinc-200">
-            {o.presence.name}
-          </span>
-          <span className="text-zinc-400">· {roleLabel(o.presence.role)}</span>
+          <span className="font-medium text-zinc-200">{o.presence.name}</span>
+          <span className="text-faint">· {roleLabel(o.presence.role)}</span>
         </div>
       ))}
 
       {others.length === 0 && (
-        <span className="text-xs text-zinc-400">Waiting for the other participant…</span>
+        <span className="text-xs text-faint">Waiting for the other participant…</span>
       )}
     </div>
   );

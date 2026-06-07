@@ -1,15 +1,19 @@
-// Live interview room route. Role is derived from the DATABASE (never a URL
-// param): the interview owner is the interviewer; the first other authenticated
-// visitor claims the candidate seat. Unauthenticated visitors are sent to log in.
+// Live interview room (authenticated). The user must be logged in; their role is
+// derived from the DB, not the URL:
+//   - the interview's owner            -> interviewer
+//   - anyone else (first to arrive)    -> claims the open candidate seat
+//   - if the seat is already taken      -> shown a "room is full" message
+// This replaces the old no-login ?role= demo path.
 
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import { getSessionProfile } from '@/src/features/auth/profile';
 import {
   getInterviewByRoomId,
   claimCandidate,
-  markActive,
 } from '@/src/features/interviews/server/interviews';
 import RoomClient from '@/src/features/room/RoomClient';
+import Logo from '@/src/features/brand/Logo';
 import type { Role } from '@/src/features/room/liveblocks.config';
 
 export default async function RoomPage({
@@ -19,7 +23,7 @@ export default async function RoomPage({
 }) {
   const { roomId } = await params;
 
-  // Must be logged in; send them to login and back here afterwards.
+  // Must be signed in. Send guests to login, then straight back to this room.
   const session = await getSessionProfile();
   if (!session) {
     redirect(`/login?next=${encodeURIComponent(`/room/${roomId}`)}`);
@@ -28,41 +32,53 @@ export default async function RoomPage({
   const interview = await getInterviewByRoomId(roomId);
   if (!interview) {
     return (
-      <div className="flex h-[100dvh] items-center justify-center bg-zinc-950 p-6 text-center text-sm text-zinc-300">
-        This interview room doesn&apos;t exist. Ask your interviewer for a valid
-        invite link.
-      </div>
+      <RoomMessage
+        title="Room not found"
+        body="This invite link is invalid or the interview was deleted."
+      />
     );
   }
 
-  const { userId, profile } = session;
-
-  // Derive the role for THIS interview from the DB.
   let role: Role;
-  if (interview.interviewer_id === userId) {
+  if (interview.interviewer_id === session.userId) {
     role = 'interviewer';
-    await markActive(interview); // first open => active + started_at
-  } else if (interview.candidate_id === userId) {
-    role = 'candidate';
-  } else if (!interview.candidate_id) {
-    await claimCandidate(interview, userId); // claim the open candidate seat
-    role = 'candidate';
   } else {
-    // Someone else already holds both seats.
-    return (
-      <div className="flex h-[100dvh] items-center justify-center bg-zinc-950 p-6 text-center text-sm text-zinc-300">
-        This interview already has an interviewer and a candidate. You&apos;re not
-        a participant in this room.
-      </div>
-    );
+    // Not the owner -> try to take the candidate seat (idempotent for the same user).
+    const claimed = await claimCandidate(interview, session.userId);
+    if (claimed && claimed.candidate_id === session.userId) {
+      role = 'candidate';
+    } else {
+      return (
+        <RoomMessage
+          title="This room is full"
+          body="This interview already has a candidate. Check with your interviewer for the right link."
+        />
+      );
+    }
   }
+
+  const name =
+    session.profile.full_name?.trim() ||
+    (role === 'interviewer' ? 'Interviewer' : 'Candidate');
 
   return (
-    <RoomClient
-      roomId={roomId}
-      role={role}
-      name={profile.full_name || (role === 'interviewer' ? 'Interviewer' : 'Candidate')}
-      interviewId={interview.id}
-    />
+    <RoomClient roomId={roomId} role={role} name={name} interviewId={interview.id} />
+  );
+}
+
+function RoomMessage({ title, body }: { title: string; body: string }) {
+  return (
+    <div className="flex h-[100dvh] flex-col items-center justify-center px-6 text-center">
+      <div className="mb-8">
+        <Logo href="/" textClassName="text-xl" markClassName="h-9 w-9" />
+      </div>
+      <div className="card max-w-sm p-7 shadow-2xl shadow-black/40">
+        <h1 className="text-xl font-bold text-white">{title}</h1>
+        <p className="mt-2 text-sm text-muted">{body}</p>
+        <Link href="/dashboard" className="btn-primary mt-5 inline-block px-4 py-2">
+          Go to dashboard
+        </Link>
+      </div>
+    </div>
   );
 }
