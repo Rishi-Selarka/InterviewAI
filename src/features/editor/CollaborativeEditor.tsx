@@ -6,6 +6,7 @@
 
 import { useEffect, useRef, type RefObject } from 'react';
 import Editor, { type OnMount } from '@monaco-editor/react';
+import './setupMonaco'; // self-host Monaco (no CDN) — must precede <Editor> mount
 import * as Y from 'yjs';
 import { MonacoBinding } from 'y-monaco';
 import type { Awareness } from 'y-protocols/awareness';

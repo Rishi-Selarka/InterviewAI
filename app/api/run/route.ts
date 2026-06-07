@@ -2,15 +2,15 @@
 //
 // ⚠️ UNSANDBOXED CODE EXECUTION — LOCAL DEVELOPMENT ONLY ⚠️
 //
-// This route runs user-submitted code directly on the server using the
-// language runtimes installed on this machine (node / python). The submitted
-// code executes with the FULL privileges of the server process — there is no
-// Docker container, VM, or external sandboxing service. NEVER expose this
-// endpoint to untrusted users or deploy it to a shared/production environment.
+// This route runs user-submitted code directly on the server using the language
+// runtimes/compilers installed on this machine (node / python / javac+java /
+// cc / c++). The submitted code executes with the FULL privileges of the server
+// process — there is no Docker container, VM, or external sandboxing service.
+// NEVER expose this endpoint to untrusted users or deploy it to a shared/production
+// environment.
 
 import { execFile } from 'node:child_process';
-import { randomUUID } from 'node:crypto';
-import { writeFile, rm } from 'node:fs/promises';
+import { mkdtemp, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
@@ -18,14 +18,11 @@ import path from 'node:path';
 export const runtime = 'nodejs';
 
 const TIMEOUT_MS = 5000;
+const COMPILE_TIMEOUT_MS = 15000; // compilers can be slower than execution
 const MAX_OUTPUT_BYTES = 1024 * 1024; // 1 MB cap on captured stdout/stderr.
 
-// Hard safety gate. This endpoint runs arbitrary user code with no sandbox, so it
-// must stay inert anywhere that isn't an explicitly opted-in local dev machine.
-// It executes ONLY when NOT in production AND the developer has set
-// ALLOW_LOCAL_CODE_EXECUTION=true in .env.local. A deployed build
-// (NODE_ENV === 'production') can never run code through this route, even if the
-// flag is somehow set — defense in depth against accidentally shipping it.
+// Hard safety gate — see file header. Runs ONLY when NOT in production AND
+// ALLOW_LOCAL_CODE_EXECUTION=true.
 function localExecutionEnabled(): boolean {
   return (
     process.env.NODE_ENV !== 'production' &&
@@ -35,55 +32,79 @@ function localExecutionEnabled(): boolean {
 
 type RunResult = { stdout: string; stderr: string; error: string | null };
 
-// Sentinel error used internally to signal the runtime binary is unavailable,
-// so POST() can map it to a friendly per-language message.
 const RUNTIME_MISSING = 'RUNTIME_MISSING';
 
-/**
- * Decide whether a failed spawn means the runtime is not installed.
- * - ENOENT: the binary genuinely does not exist on PATH.
- * - Windows exit code 9009 + a "not found / not recognized" message: this is the
- *   Microsoft Store `python`/`node` app-execution-alias stub, which isn't a real
- *   install. We pair the code with the message to avoid misreading a user
- *   program that merely exits 9009 on its own.
- */
 function isRuntimeMissing(code: string | number | undefined, stderr: string): boolean {
   if (code === 'ENOENT') return true;
   if (code === 9009 && /not found|not recognized/i.test(stderr)) return true;
   return false;
 }
 
+type Step = { cmd: string; args: string[] };
+
 type RuntimeConfig = {
-  command: string;
-  extension: string;
+  /** Source filename written into the temp dir (fixed name where it matters, e.g. Java). */
+  filename: string;
+  /** Optional compile step; if it fails the compiler output is shown as the error. */
+  compile?: Step;
+  /** Command to run (the program, or the compiled binary). */
+  run: Step;
   notInstalledMessage: string;
 };
 
-const RUNTIMES: Record<string, RuntimeConfig> = {
-  javascript: {
-    command: 'node',
-    extension: 'js',
-    notInstalledMessage: 'Node.js is not installed on this machine.',
-  },
-  python: {
-    command: 'python',
-    extension: 'py',
-    notInstalledMessage: 'Python is not installed on this machine.',
-  },
-};
+// `out` is the compiled binary path (in the temp dir) for compiled languages.
+function configFor(language: string, dir: string): RuntimeConfig | null {
+  const out = path.join(dir, 'program.out');
+  switch (language) {
+    case 'javascript':
+      return {
+        filename: 'main.js',
+        run: { cmd: 'node', args: [path.join(dir, 'main.js')] },
+        notInstalledMessage: 'Node.js is not installed on this machine.',
+      };
+    case 'python':
+      return {
+        filename: 'main.py',
+        run: { cmd: 'python3', args: [path.join(dir, 'main.py')] },
+        notInstalledMessage: 'Python 3 is not installed on this machine (try: brew install python3).',
+      };
+    case 'java':
+      // The public class must be named Main (see the starter template).
+      return {
+        filename: 'Main.java',
+        compile: { cmd: 'javac', args: [path.join(dir, 'Main.java')] },
+        run: { cmd: 'java', args: ['-cp', dir, 'Main'] },
+        notInstalledMessage:
+          'Java (JDK) is not installed on this machine. Install a JDK (e.g. brew install openjdk) to run Java.',
+      };
+    case 'c':
+      return {
+        filename: 'main.c',
+        compile: { cmd: 'cc', args: [path.join(dir, 'main.c'), '-o', out] },
+        run: { cmd: out, args: [] },
+        notInstalledMessage:
+          'A C compiler is not installed. On macOS run: xcode-select --install',
+      };
+    case 'cpp':
+      return {
+        filename: 'main.cpp',
+        compile: { cmd: 'c++', args: [path.join(dir, 'main.cpp'), '-o', out] },
+        run: { cmd: out, args: [] },
+        notInstalledMessage:
+          'A C++ compiler is not installed. On macOS run: xcode-select --install',
+      };
+    default:
+      return null;
+  }
+}
 
-/**
- * Execute a file with the given runtime command, capturing stdout/stderr and
- * enforcing a wall-clock timeout. Resolves (never rejects) with a RunResult.
- * The special sentinel error 'ENOENT' signals the runtime binary was not found
- * so the caller can map it to a friendly per-language message.
- */
-function runFile(command: string, filePath: string): Promise<RunResult> {
+/** Run one command (compile or execute), resolving (never rejecting) with a RunResult. */
+function execStep(step: Step, cwd: string, timeout: number): Promise<RunResult> {
   return new Promise((resolve) => {
     execFile(
-      command,
-      [filePath],
-      { timeout: TIMEOUT_MS, maxBuffer: MAX_OUTPUT_BYTES },
+      step.cmd,
+      step.args,
+      { timeout, maxBuffer: MAX_OUTPUT_BYTES, cwd },
       (err, stdout, stderr) => {
         if (err) {
           const e = err as NodeJS.ErrnoException & {
@@ -91,29 +112,23 @@ function runFile(command: string, filePath: string): Promise<RunResult> {
             killed?: boolean;
             signal?: string;
           };
-
-          // Runtime binary not installed on this machine.
           if (isRuntimeMissing(e.code, stderr)) {
             resolve({ stdout, stderr, error: RUNTIME_MISSING });
             return;
           }
-
-          // Killed by the timeout.
           if (e.killed && e.signal === 'SIGTERM') {
             resolve({
               stdout,
               stderr,
-              error: `Execution timed out after ${TIMEOUT_MS / 1000} seconds.`,
+              error: `Execution timed out after ${timeout / 1000} seconds.`,
             });
             return;
           }
-
-          // Non-zero exit code: the program ran but errored. The details are
-          // already in stderr, so surface that without an extra system error.
-          resolve({ stdout, stderr, error: null });
+          // Non-zero exit: the program/compiler ran but errored. Details are in
+          // stderr; signal failure so a compile error halts before running.
+          resolve({ stdout, stderr, error: stderr || 'Process exited with an error.' });
           return;
         }
-
         resolve({ stdout, stderr, error: null });
       },
     );
@@ -121,7 +136,6 @@ function runFile(command: string, filePath: string): Promise<RunResult> {
 }
 
 export async function POST(request: Request) {
-  // Refuse to execute anywhere this hasn't been explicitly enabled for local dev.
   if (!localExecutionEnabled()) {
     return Response.json(
       {
@@ -139,14 +153,10 @@ export async function POST(request: Request) {
   try {
     body = await request.json();
   } catch {
-    return Response.json(
-      { stdout: '', stderr: '', error: 'Invalid JSON body.' },
-      { status: 400 },
-    );
+    return Response.json({ stdout: '', stderr: '', error: 'Invalid JSON body.' }, { status: 400 });
   }
 
   const { language, code } = body;
-
   if (typeof language !== 'string' || typeof code !== 'string') {
     return Response.json(
       { stdout: '', stderr: '', error: 'Request must include string "language" and "code".' },
@@ -154,32 +164,45 @@ export async function POST(request: Request) {
     );
   }
 
-  const config = RUNTIMES[language];
+  // One temp dir per run holds the source, any binary, and (for Java) .class files.
+  const dir = await mkdtemp(path.join(tmpdir(), 'interview-run-'));
+  const config = configFor(language, dir);
   if (!config) {
+    await rm(dir, { recursive: true, force: true }).catch(() => {});
     return Response.json(
       { stdout: '', stderr: '', error: `Unsupported language: ${language}` },
       { status: 400 },
     );
   }
 
-  const filePath = path.join(tmpdir(), `interview-run-${randomUUID()}.${config.extension}`);
-
   try {
-    await writeFile(filePath, code, 'utf8');
+    await writeFile(path.join(dir, config.filename), code, 'utf8');
 
-    const result = await runFile(config.command, filePath);
-    if (result.error === RUNTIME_MISSING) {
-      // Don't leak the raw stub/spawn message; show the friendly one.
-      result.stderr = '';
-      result.error = config.notInstalledMessage;
+    // Compile step (compiled languages only).
+    if (config.compile) {
+      const compiled = await execStep(config.compile, dir, COMPILE_TIMEOUT_MS);
+      if (compiled.error === RUNTIME_MISSING) {
+        return Response.json({ stdout: '', stderr: '', error: config.notInstalledMessage });
+      }
+      if (compiled.error) {
+        // Surface the compiler diagnostics as the output.
+        return Response.json({ stdout: '', stderr: compiled.stderr, error: 'Compilation failed.' });
+      }
     }
 
+    // Run step.
+    const result = await execStep(config.run, dir, TIMEOUT_MS);
+    if (result.error === RUNTIME_MISSING) {
+      return Response.json({ stdout: '', stderr: '', error: config.notInstalledMessage });
+    }
+    // For a clean non-zero exit we already put stderr in error; normalize so the
+    // UI shows stdout+stderr without a duplicate generic message.
+    if (result.error && result.error === result.stderr) result.error = null;
     return Response.json(result);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return Response.json({ stdout: '', stderr: '', error: message }, { status: 500 });
   } finally {
-    // Always clean up the temp file, regardless of how execution ended.
-    await rm(filePath, { force: true }).catch(() => {});
+    await rm(dir, { recursive: true, force: true }).catch(() => {});
   }
 }
