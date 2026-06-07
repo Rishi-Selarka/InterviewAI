@@ -21,6 +21,17 @@ create table if not exists public.profiles (
   created_at timestamptz not null default now()
 );
 
+-- Editable profile fields (everything a user can change in profile settings).
+-- ADDITIVE + idempotent so re-running the file is safe on an existing DB.
+alter table public.profiles
+  add column if not exists username text not null default '',
+  add column if not exists headline text not null default '',
+  add column if not exists bio text not null default '',
+  add column if not exists linkedin_url text not null default '',
+  add column if not exists github_url text not null default '',
+  add column if not exists website_url text not null default '',
+  add column if not exists avatar_url text not null default '';
+
 alter table public.profiles enable row level security;
 
 drop policy if exists "profiles: read own" on public.profiles;
@@ -35,11 +46,13 @@ create policy "profiles: update own"
   with check (auth.uid() = id);
 
 -- Allow a user to insert their own profile row (the trigger below normally does
--- this, but this keeps client-side creation possible too).
+-- this, but this keeps client-side creation possible too). The role is pinned to
+-- the two non-privileged roles: a client can never self-insert `hr` (which would
+-- grant all-interviews read access). hr is granted only via the service role.
 drop policy if exists "profiles: insert own" on public.profiles;
 create policy "profiles: insert own"
   on public.profiles for insert
-  with check (auth.uid() = id);
+  with check (auth.uid() = id and role in ('interviewer', 'candidate'));
 
 -- Helper: is the current user an HR user? SECURITY DEFINER avoids RLS recursion
 -- when policies on other tables need to check the caller's role.
@@ -57,21 +70,41 @@ $$;
 
 -- Create a profile automatically when a new auth user signs up, pulling the
 -- chosen full_name + role from the signup metadata.
+--
+-- SECURITY: signup metadata is fully client-controlled (the browser calls
+-- auth.signUp({ data: { role } }) directly), so we must NOT trust it for the
+-- privileged `hr` role. `hr` grants read access to EVERY interview/evaluation/
+-- transcript via is_hr(), so it can only be granted manually (service role / SQL
+-- editor). Self-signup may pick `interviewer` (only ever sees its own interviews)
+-- or, for anything else, defaults to `candidate`.
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
 security definer
 set search_path = public
 as $$
+declare
+  meta jsonb := coalesce(new.raw_user_meta_data, '{}'::jsonb);
+  derived_name text;
 begin
-  insert into public.profiles (id, full_name, role)
+  -- Name from Google (full_name/name), else the local part of the email.
+  derived_name := coalesce(
+    nullif(meta ->> 'full_name', ''),
+    nullif(meta ->> 'name', ''),
+    nullif(split_part(coalesce(new.email, ''), '@', 1), ''),
+    'User'
+  );
+
+  insert into public.profiles (id, full_name, username, avatar_url, role)
   values (
     new.id,
-    coalesce(new.raw_user_meta_data ->> 'full_name', ''),
+    derived_name,
+    -- A simple default handle from the email local part (user can change it).
+    coalesce(lower(nullif(split_part(coalesce(new.email, ''), '@', 1), '')), ''),
+    coalesce(meta ->> 'avatar_url', meta ->> 'picture', ''),
     case
-      when new.raw_user_meta_data ->> 'role' in ('interviewer', 'candidate', 'hr')
-        then new.raw_user_meta_data ->> 'role'
-      else 'candidate'
+      when meta ->> 'role' = 'interviewer' then 'interviewer'
+      else 'candidate' -- 'hr'/anything else => candidate; hr is granted manually
     end
   )
   on conflict (id) do nothing;
@@ -83,6 +116,43 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
+
+-- SECURITY: the "profiles: update own" policy below lets a user update their own
+-- row (so they can edit their full_name). Without a guard that same policy would
+-- also let them run `update profiles set role = 'hr'` and self-promote to the
+-- all-reading hr role. This BEFORE UPDATE trigger blocks any self-service change
+-- that INVOLVES `hr` (the only cross-tenant role) unless it comes from a trusted
+-- context: the service_role key (server admin client) or a direct DB connection
+-- (SQL editor / migrations, which have no PostgREST JWT claims).
+--
+-- candidate <-> interviewer IS allowed for logged-in users: neither can read
+-- another user's data, and OAuth (Google) sign-ups are created as 'candidate' but
+-- may legitimately need to become an interviewer.
+create or replace function public.prevent_role_change()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  claims text := current_setting('request.jwt.claims', true);
+  jwt_role text := nullif(claims, '')::jsonb ->> 'role';
+begin
+  if (new.role = 'hr' or old.role = 'hr')
+     and new.role is distinct from old.role
+     and jwt_role is not null
+     and jwt_role <> 'service_role'
+  then
+    new.role := old.role;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists prevent_profile_role_change on public.profiles;
+create trigger prevent_profile_role_change
+  before update on public.profiles
+  for each row execute function public.prevent_role_change();
 
 -- ---------------------------------------------------------------------------
 -- interviews

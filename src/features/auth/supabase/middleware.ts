@@ -7,8 +7,20 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
+// Is Supabase actually configured (vs. missing / placeholder demo values)? When it
+// isn't, we skip the per-request auth refresh entirely — otherwise every page
+// navigation would wait on a failing network call to a non-existent Supabase host.
+function supabaseConfigured(): boolean {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
+  return Boolean(url) && Boolean(key) && !url.includes('placeholder') && !key.includes('placeholder');
+}
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
+
+  // No-login demo (or Supabase not set up): nothing to refresh.
+  if (!supabaseConfigured()) return supabaseResponse;
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

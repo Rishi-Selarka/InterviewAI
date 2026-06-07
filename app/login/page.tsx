@@ -1,90 +1,116 @@
 'use client';
 
-// Email/password login. On success we send the user to ?next= (e.g. the room
-// link they followed) or the dashboard.
+// Single, simple auth page. Continue with Google (recommended) or email +
+// password. There is no separate signup page: a new email/password just creates
+// the account and logs in (email confirmation is off), an existing one logs in.
 
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 import { createClient } from '@/src/features/auth/supabase/client';
+import { safeNext } from '@/src/features/auth/safeNext';
+import GoogleButton from '@/src/features/auth/GoogleButton';
+import Logo from '@/src/features/brand/Logo';
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get('next') || '/dashboard';
+  const next = safeNext(searchParams.get('next'));
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
     setError(null);
+    setNotice(null);
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      setError(error.message);
+
+    // Create-or-sign-in in one step (no separate signup page).
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { full_name: email.split('@')[0] } },
+    });
+
+    if (signUpError) {
+      if (/already registered|already exists/i.test(signUpError.message)) {
+        // Existing account — just log in.
+        const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+        if (signInError) {
+          setError(signInError.message);
+          setBusy(false);
+          return;
+        }
+      } else {
+        setError(signUpError.message);
+        setBusy(false);
+        return;
+      }
+    } else if (!data.session) {
+      // Email confirmation is enabled on this project.
+      setNotice(`Account created. Check ${email} to confirm, then log in.`);
       setBusy(false);
       return;
     }
-    // Refresh so server components pick up the new session, then navigate.
+
     router.push(next);
     router.refresh();
   };
 
   return (
-    <div className="flex flex-1 items-center justify-center bg-zinc-50 px-6 py-16 dark:bg-black">
+    <div className="flex flex-1 items-center justify-center px-6 py-16">
       <div className="w-full max-w-sm">
-        <h1 className="mb-1 text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-          Log in
-        </h1>
-        <p className="mb-6 text-sm text-zinc-600 dark:text-zinc-400">
-          Welcome back to IntelliInterview.
-        </p>
+        <div className="mb-8 flex justify-center">
+          <Logo href="/" textClassName="text-xl" markClassName="h-9 w-9" />
+        </div>
+        <div className="card p-7 shadow-2xl shadow-black/40">
+          <h1 className="text-2xl font-bold tracking-tight text-white">Welcome</h1>
+          <p className="mb-6 mt-1 text-sm text-muted">Log in to IntelliInterview.</p>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-          <input
-            type="email"
-            required
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-indigo-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-          />
-          <input
-            type="password"
-            required
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-indigo-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-          />
+          <GoogleButton next={next} />
 
-          {error && (
-            <p className="rounded-md bg-rose-500/10 px-3 py-2 text-sm text-rose-600 dark:text-rose-300">
-              {error}
-            </p>
-          )}
+          <div className="my-4 flex items-center gap-3 text-xs text-faint">
+            <span className="h-px flex-1 bg-line" /> or email <span className="h-px flex-1 bg-line" />
+          </div>
 
-          <button
-            type="submit"
-            disabled={busy}
-            className="rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-indigo-500 disabled:opacity-60"
-          >
-            {busy ? 'Logging in…' : 'Log in'}
-          </button>
-        </form>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+            <input
+              type="email"
+              required
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="input"
+            />
+            <input
+              type="password"
+              required
+              minLength={6}
+              placeholder="Password (min 6 chars)"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="input"
+            />
 
-        <p className="mt-5 text-center text-sm text-zinc-600 dark:text-zinc-400">
-          No account?{' '}
-          <Link
-            href={`/signup?next=${encodeURIComponent(next)}`}
-            className="font-medium text-indigo-600 hover:underline dark:text-indigo-400"
-          >
-            Sign up
-          </Link>
+            {error && (
+              <p className="rounded-xl bg-rose-500/10 px-3 py-2 text-sm text-rose-300">{error}</p>
+            )}
+            {notice && (
+              <p className="rounded-xl bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">{notice}</p>
+            )}
+
+            <button type="submit" disabled={busy} className="btn-primary mt-1 w-full">
+              {busy ? 'Please wait…' : 'Continue'}
+            </button>
+          </form>
+        </div>
+
+        <p className="mt-5 text-center text-xs text-faint">
+          New here? Just continue above — your account is created automatically.
         </p>
       </div>
     </div>
@@ -92,7 +118,6 @@ function LoginForm() {
 }
 
 export default function LoginPage() {
-  // useSearchParams requires a Suspense boundary.
   return (
     <Suspense fallback={null}>
       <LoginForm />
