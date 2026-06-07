@@ -20,13 +20,6 @@ export default async function ProfilePage() {
   const name = displayName(profile, email);
   const initial = name.charAt(0).toUpperCase();
 
-  const roleBadgeColor: Record<string, string> = {
-    interviewer: 'bg-brand/15 text-brandbright',
-    candidate: 'bg-sky-500/15 text-sky-300',
-    hr: 'bg-emerald-500/15 text-emerald-300',
-  };
-  const badgeClass = roleBadgeColor[profile.role] ?? 'bg-surface2 text-muted';
-
   return (
     <div className="min-h-screen bg-ink">
       {/* Top bar */}
@@ -62,6 +55,7 @@ export default async function ProfilePage() {
           <div className="flex flex-col items-start gap-5 sm:flex-row sm:items-center">
             {/* Avatar */}
             {profile.avatar_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={profile.avatar_url}
                 alt={name}
@@ -75,14 +69,7 @@ export default async function ProfilePage() {
 
             {/* Identity */}
             <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-xl font-bold leading-tight text-white">{name}</h1>
-                <span
-                  className={`rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${badgeClass}`}
-                >
-                  {profile.role}
-                </span>
-              </div>
+              <h1 className="text-xl font-bold leading-tight text-white">{name}</h1>
 
               {profile.username && (
                 <p className="mt-0.5 text-sm text-muted">@{profile.username}</p>

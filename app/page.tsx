@@ -4,6 +4,7 @@
 import Link from 'next/link';
 import Logo from '@/src/features/brand/Logo';
 import GuestStart from '@/src/features/landing/GuestStart';
+import Icon, { type IconName } from '@/src/features/ui/Icon';
 
 export default function Home() {
   return (
@@ -43,9 +44,9 @@ export default function Home() {
           </div>
 
           <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <HeroPill icon="🛡️" title="Secure Execution" subtitle="Sandboxed & safe" />
-            <HeroPill icon="⚡" title="Real-time Sync" subtitle="Live shared editor" />
-            <HeroPill icon="📊" title="Fair Scoring" subtitle="Rubric + AI judge" />
+            <HeroPill icon="shield" title="Secure Execution" subtitle="Sandboxed & safe" />
+            <HeroPill icon="bolt" title="Real-time Sync" subtitle="Live shared editor" />
+            <HeroPill icon="gauge" title="Fair Scoring" subtitle="Rubric + AI judge" />
           </div>
         </div>
 
@@ -90,25 +91,25 @@ export default function Home() {
         <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <FeatureCard
             color="bg-brand/15 text-brandbright"
-            icon="🧩"
+            icon="calendar"
             title="Interview Made Easy"
             body="Create, schedule, and manage live coding sessions with a shareable invite link."
           />
           <FeatureCard
             color="bg-emerald-500/15 text-emerald-300"
-            icon="🔒"
+            icon="shield"
             title="Secure & Reliable"
             body="Sandboxed, gated code execution keeps the host safe from untrusted submissions."
           />
           <FeatureCard
             color="bg-amber-500/15 text-amber-300"
-            icon="⚖️"
+            icon="gauge"
             title="Fair Evaluation"
             body="A 5-point rubric plus an unbiased AI second-judge to catch scoring gaps."
           />
           <FeatureCard
             color="bg-sky-500/15 text-sky-300"
-            icon="📈"
+            icon="chart"
             title="Insightful Reports"
             body="Recordings, transcripts, and attention signals — all in one detail view."
           />
@@ -126,10 +127,12 @@ export default function Home() {
   );
 }
 
-function HeroPill({ icon, title, subtitle }: { icon: string; title: string; subtitle: string }) {
+function HeroPill({ icon, title, subtitle }: { icon: IconName; title: string; subtitle: string }) {
   return (
     <div className="card card-hover flex items-center gap-3 px-3.5 py-3">
-      <span className="text-xl">{icon}</span>
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand/15 text-brandbright">
+        <Icon name={icon} className="h-5 w-5" />
+      </span>
       <div className="leading-tight">
         <div className="text-sm font-semibold text-white">{title}</div>
         <div className="text-xs text-faint">{subtitle}</div>
@@ -145,13 +148,15 @@ function FeatureCard({
   body,
 }: {
   color: string;
-  icon: string;
+  icon: IconName;
   title: string;
   body: string;
 }) {
   return (
     <div className="card card-hover p-5">
-      <span className={`chip ${color}`}>{icon}</span>
+      <span className={`chip ${color}`}>
+        <Icon name={icon} className="h-5 w-5" />
+      </span>
       <h3 className="mt-4 text-base font-semibold text-white">{title}</h3>
       <p className="mt-1.5 text-sm leading-relaxed text-muted">{body}</p>
     </div>

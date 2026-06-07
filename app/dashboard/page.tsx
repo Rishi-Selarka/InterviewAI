@@ -1,9 +1,9 @@
-// Interviewer dashboard: sidebar + stats + their interviews + create a new one.
-// Candidates and HR get a short note (candidates join via invite links).
+// Dashboard: any signed-in user can host interviews (and join others' rooms via
+// invite link). Sidebar links to the profile settings.
 
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { getSessionProfile } from '@/src/features/auth/profile';
+import { getSessionProfile, displayName } from '@/src/features/auth/profile';
 import {
   listInterviewsForInterviewer,
   type Interview,
@@ -11,6 +11,7 @@ import {
 import NewInterviewButton from '@/src/features/interviews/NewInterviewButton';
 import SignOutButton from '@/src/features/auth/SignOutButton';
 import Logo from '@/src/features/brand/Logo';
+import Icon, { type IconName } from '@/src/features/ui/Icon';
 
 const STATUS_STYLES: Record<string, string> = {
   created: 'bg-zinc-500/15 text-zinc-300',
@@ -23,46 +24,32 @@ export default async function DashboardPage() {
   if (!session) redirect('/login?next=/dashboard');
 
   const { profile } = session;
-  const interviews =
-    profile.role === 'interviewer'
-      ? await listInterviewsForInterviewer(session.userId)
-      : [];
+  const name = displayName(profile, session.email);
+  const interviews = await listInterviewsForInterviewer(session.userId);
 
   return (
     <div className="flex flex-1">
-      <Sidebar name={profile.full_name || 'You'} role={profile.role} />
+      <Sidebar name={name} avatarUrl={profile.avatar_url} />
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Mobile top bar */}
         <header className="flex items-center justify-between border-b border-line px-5 py-3 lg:hidden">
           <Logo href="/" textClassName="text-base" markClassName="h-7 w-7" />
-          <SignOutButton />
+          <div className="flex items-center gap-2">
+            <Link href="/profile" className="btn-ghost px-3 py-1.5">Profile</Link>
+            <SignOutButton />
+          </div>
         </header>
 
         <main className="mx-auto w-full max-w-5xl px-6 py-8">
-          {profile.role === 'interviewer' ? (
-            <InterviewerDashboard
-              interviews={interviews}
-              name={profile.full_name || 'there'}
-            />
-          ) : profile.role === 'hr' ? (
-            <EmptyState
-              title="HR view coming soon"
-              body="Your role already has read access to all interviews and evaluations. The score-comparison view lands in a later milestone."
-            />
-          ) : (
-            <EmptyState
-              title={`You're all set, ${profile.full_name || 'candidate'}.`}
-              body="Open the invite link your interviewer shared with you to join your interview room."
-            />
-          )}
+          <InterviewerDashboard interviews={interviews} name={name} />
         </main>
       </div>
     </div>
   );
 }
 
-function Sidebar({ name, role }: { name: string; role: string }) {
+function Sidebar({ name, avatarUrl }: { name: string; avatarUrl: string }) {
   return (
     <aside className="hidden w-60 shrink-0 flex-col border-r border-line bg-ink2/60 lg:flex">
       <div className="px-5 py-5">
@@ -70,31 +57,44 @@ function Sidebar({ name, role }: { name: string; role: string }) {
       </div>
 
       <nav className="flex-1 px-3">
-        <NavItem href="/dashboard" icon="▦" label="Dashboard" active />
-        <NavItem href="/interview" icon="⌨" label="Coding Pad" />
+        <NavItem href="/dashboard" icon="dashboard" label="Dashboard" active />
+        <NavItem href="/profile" icon="user" label="Profile" />
+        <NavItem href="/interview" icon="code" label="Coding Pad" />
         <p className="px-3 pb-1.5 pt-5 text-[10px] font-semibold uppercase tracking-wider text-faint">
           More
         </p>
-        <NavItem icon="👥" label="Candidates" soon />
-        <NavItem icon="📑" label="Reports" soon />
-        <NavItem icon="⚙" label="Settings" soon />
+        <NavItem icon="users" label="Candidates" soon />
+        <NavItem icon="report" label="Reports" soon />
       </nav>
 
       <div className="border-t border-line p-3">
-        <div className="flex items-center gap-2.5 rounded-xl px-2 py-2">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-brand2 to-brand text-sm font-semibold text-white">
-            {name.charAt(0).toUpperCase()}
-          </span>
+        <Link
+          href="/profile"
+          className="flex items-center gap-2.5 rounded-xl px-2 py-2 transition-colors hover:bg-surface2"
+        >
+          <Avatar name={name} url={avatarUrl} />
           <div className="min-w-0 leading-tight">
             <div className="truncate text-sm font-medium text-zinc-100">{name}</div>
-            <div className="text-xs capitalize text-faint">{role}</div>
+            <div className="text-xs text-faint">View profile</div>
           </div>
-        </div>
+        </Link>
         <div className="mt-2">
           <SignOutButton />
         </div>
       </div>
     </aside>
+  );
+}
+
+function Avatar({ name, url }: { name: string; url: string }) {
+  if (url) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={url} alt={name} className="h-9 w-9 shrink-0 rounded-full object-cover" />;
+  }
+  return (
+    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand text-sm font-semibold text-white">
+      {name.charAt(0).toUpperCase()}
+    </span>
   );
 }
 
@@ -106,7 +106,7 @@ function NavItem({
   soon,
 }: {
   href?: string;
-  icon: string;
+  icon: IconName;
   label: string;
   active?: boolean;
   soon?: boolean;
@@ -116,7 +116,7 @@ function NavItem({
   if (soon || !href) {
     return (
       <div className={`${base} cursor-default text-faint`}>
-        <span className="w-4 text-center">{icon}</span>
+        <Icon name={icon} className="h-[18px] w-[18px]" />
         <span>{label}</span>
         <span className="ml-auto rounded-full bg-surface px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-faint">
           soon
@@ -128,12 +128,10 @@ function NavItem({
     <Link
       href={href}
       className={`${base} ${
-        active
-          ? 'bg-brand/15 text-white'
-          : 'text-muted hover:bg-surface2 hover:text-white'
+        active ? 'bg-brand/15 text-white' : 'text-muted hover:bg-surface2 hover:text-white'
       }`}
     >
-      <span className="w-4 text-center">{icon}</span>
+      <Icon name={icon} className="h-[18px] w-[18px]" />
       <span>{label}</span>
     </Link>
   );
@@ -154,25 +152,19 @@ function InterviewerDashboard({
     <>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white">
-            Welcome back, {name} 👋
-          </h1>
-          <p className="mt-1 text-sm text-muted">
-            Here&apos;s what&apos;s happening with your interviews.
-          </p>
+          <h1 className="text-2xl font-bold tracking-tight text-white">Welcome back, {name} 👋</h1>
+          <p className="mt-1 text-sm text-muted">Create an interview and share the invite link.</p>
         </div>
         <NewInterviewButton />
       </div>
 
-      {/* Stat cards */}
       <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard icon="🗂️" color="bg-brand/15 text-brandbright" label="Total Interviews" value={interviews.length} />
-        <StatCard icon="🟢" color="bg-emerald-500/15 text-emerald-300" label="Active Now" value={active} />
-        <StatCard icon="✅" color="bg-sky-500/15 text-sky-300" label="Completed" value={ended} />
-        <StatCard icon="👤" color="bg-amber-500/15 text-amber-300" label="Candidates Joined" value={candidates} />
+        <StatCard icon="briefcase" color="bg-brand/15 text-brandbright" label="Total Interviews" value={interviews.length} />
+        <StatCard icon="live" color="bg-emerald-500/15 text-emerald-300" label="Active Now" value={active} />
+        <StatCard icon="check" color="bg-sky-500/15 text-sky-300" label="Completed" value={ended} />
+        <StatCard icon="user" color="bg-amber-500/15 text-amber-300" label="Candidates Joined" value={candidates} />
       </div>
 
-      {/* Interviews list */}
       <h2 className="mb-3 mt-9 text-lg font-semibold text-white">Your interviews</h2>
       {interviews.length === 0 ? (
         <div className="card border-dashed p-10 text-center">
@@ -184,35 +176,22 @@ function InterviewerDashboard({
       ) : (
         <ul className="flex flex-col gap-2.5">
           {interviews.map((iv) => (
-            <li
-              key={iv.id}
-              className="card card-hover flex items-center justify-between px-4 py-3.5"
-            >
+            <li key={iv.id} className="card card-hover flex items-center justify-between px-4 py-3.5">
               <div className="min-w-0">
                 <div className="flex items-center gap-2.5">
                   <span className="font-mono text-sm font-medium text-white">{iv.room_id}</span>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                      STATUS_STYLES[iv.status] ?? ''
-                    }`}
-                  >
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[iv.status] ?? ''}`}>
                     {iv.status}
                   </span>
                   {iv.candidate_id && (
                     <span className="hidden text-xs text-faint sm:inline">candidate joined</span>
                   )}
                 </div>
-                <span className="text-xs text-faint">
-                  {new Date(iv.created_at).toLocaleString()}
-                </span>
+                <span className="text-xs text-faint">{new Date(iv.created_at).toLocaleString()}</span>
               </div>
               <div className="flex shrink-0 gap-2">
-                <Link href={`/interviews/${iv.id}`} className="btn-ghost px-3.5 py-1.5">
-                  Details
-                </Link>
-                <Link href={`/room/${iv.room_id}`} className="btn-primary px-3.5 py-1.5">
-                  Open
-                </Link>
+                <Link href={`/interviews/${iv.id}`} className="btn-ghost px-3.5 py-1.5">Details</Link>
+                <Link href={`/room/${iv.room_id}`} className="btn-primary px-3.5 py-1.5">Open</Link>
               </div>
             </li>
           ))}
@@ -228,25 +207,18 @@ function StatCard({
   label,
   value,
 }: {
-  icon: string;
+  icon: IconName;
   color: string;
   label: string;
   value: number;
 }) {
   return (
     <div className="card p-4">
-      <span className={`chip ${color}`}>{icon}</span>
+      <span className={`chip ${color}`}>
+        <Icon name={icon} className="h-5 w-5" />
+      </span>
       <div className="mt-3 text-2xl font-bold text-white">{value}</div>
       <div className="text-xs text-muted">{label}</div>
-    </div>
-  );
-}
-
-function EmptyState({ title, body }: { title: string; body: string }) {
-  return (
-    <div className="card p-8">
-      <h1 className="text-lg font-semibold text-white">{title}</h1>
-      <p className="mt-2 text-sm text-muted">{body}</p>
     </div>
   );
 }

@@ -59,8 +59,9 @@ export default function InterviewerControls({ interviewId, recorderRef }: Props)
   const endInterview = async () => {
     if (
       !window.confirm(
-        'End this interview? This stops recording, saves the stats, and transcribes ' +
-          'the audio locally (may take a few minutes).',
+        'Stop recording and save the transcript? This uploads the audio and ' +
+          'transcribes it locally (may take a few minutes). Use "End interview" in ' +
+          'the top bar to finish the session.',
       )
     ) {
       return;
@@ -160,7 +161,7 @@ export default function InterviewerControls({ interviewId, recorderRef }: Props)
         onClick={endInterview}
         className="w-full rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-sm font-medium text-rose-300 transition-colors hover:bg-rose-500/20"
       >
-        End interview &amp; transcribe
+        Stop &amp; save transcript
       </button>
     </div>
   );
