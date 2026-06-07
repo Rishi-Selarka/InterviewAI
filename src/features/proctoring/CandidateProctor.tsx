@@ -3,12 +3,18 @@
 // Candidate-only assistive proctoring runner. It reads frames from the EXISTING
 // local camera track (via useParticipant — no second getUserMedia), runs the
 // MediaPipe FaceLandmarker a few times per second, debounces a "looking away"
-// signal, and broadcasts it to the interviewer through Liveblocks presence.
+// signal, and broadcasts four anomaly signals to the interviewer through
+// Liveblocks presence:
+//
+//   lookingAway / lookAwayCount   — head-pose outside thresholds or no face
+//   tabHidden  / tabSwitchCount   — candidate left the interview tab/window
+//   multipleFaces                 — more than one face in frame
+//   noFace                        — camera is on but no face detected
 //
 // This NEVER blocks or interrupts the candidate. It renders only a 1px offscreen
 // <video> used as the detection source.
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParticipant } from '@videosdk.live/react-sdk';
 import { useUpdateMyPresence } from '@liveblocks/react';
 import type { FaceLandmarker } from '@mediapipe/tasks-vision';
@@ -22,6 +28,9 @@ import {
   YAW_THRESHOLD_DEG,
 } from './config';
 import { anglesFromMatrix, isAwayThisFrame } from './headPose';
+import { useTabMonitor } from './useTabMonitor';
+import { DEFAULT_PROCTORING } from '@/src/features/room/liveblocks.config';
+import type { ProctoringState } from '@/src/features/room/liveblocks.config';
 
 interface Props {
   /** The LOCAL participant's id (the candidate viewing their own camera). */
@@ -36,30 +45,71 @@ export default function CandidateProctor({ participantId }: Props) {
   const landmarkerRef = useRef<FaceLandmarker | null>(null);
   const [ready, setReady] = useState(false);
 
-  // Debounce state (mutable, updated inside the detection loop — not per render).
+  // ---------------------------------------------------------------------------
+  // Single source of truth: all proctoring state as refs so the detection loop
+  // and event listeners can mutate them without triggering React re-renders.
+  // ---------------------------------------------------------------------------
+
+  // Head-pose / look-away
   const awaySinceRef = useRef<number | null>(null);
   const backSinceRef = useRef<number | null>(null);
-  const lookingAwayRef = useRef(false);
-  const countRef = useRef(0);
+  const lookingAwayRef = useRef<boolean>(DEFAULT_PROCTORING.lookingAway);
+  const lookAwayCountRef = useRef<number>(DEFAULT_PROCTORING.lookAwayCount);
   const lastTsRef = useRef(0);
 
-  // Push the current proctoring state to the interviewer via presence.
-  const publish = () => {
-    updateMyPresence({
-      proctoring: { lookingAway: lookingAwayRef.current, lookAwayCount: countRef.current },
-    });
-  };
+  // Tab/window monitoring (mutated by useTabMonitor via the callback below)
+  const tabHiddenRef = useRef<boolean>(DEFAULT_PROCTORING.tabHidden);
+  const tabSwitchCountRef = useRef<number>(DEFAULT_PROCTORING.tabSwitchCount);
 
-  // 0. Publish a baseline immediately so the interviewer sees the assistive
-  //    signal is active (and the channel exists) even before the model loads or
-  //    if detection is unavailable.
+  // Face-count signals
+  const multipleFacesRef = useRef<boolean>(DEFAULT_PROCTORING.multipleFaces);
+  const noFaceRef = useRef<boolean>(DEFAULT_PROCTORING.noFace);
+
+  // ---------------------------------------------------------------------------
+  // publish() — builds the full ProctoringState from refs and pushes it once.
+  // Called on every meaningful change so the interviewer always sees up-to-date
+  // values. Using useCallback so the function identity is stable for useEffect
+  // deps (though all deps are refs, so the function never actually recreates).
+  // ---------------------------------------------------------------------------
+  const publish = useCallback(() => {
+    const state: ProctoringState = {
+      lookingAway: lookingAwayRef.current,
+      lookAwayCount: lookAwayCountRef.current,
+      tabHidden: tabHiddenRef.current,
+      tabSwitchCount: tabSwitchCountRef.current,
+      multipleFaces: multipleFacesRef.current,
+      noFace: noFaceRef.current,
+    };
+    updateMyPresence({ proctoring: state });
+  // updateMyPresence is stable from Liveblocks; list it to keep lint happy.
+   
+  }, [updateMyPresence]);
+
+  // ---------------------------------------------------------------------------
+  // 0. Publish a baseline immediately so the interviewer sees the channel is
+  //    live even before the model loads or if the camera / model is unavailable.
+  // ---------------------------------------------------------------------------
   useEffect(() => {
     publish();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 1. Load the FaceLandmarker once. Imported dynamically so the wasm/model code
-  //    never ends up in the SSR/main bundle.
+  // ---------------------------------------------------------------------------
+  // 1. Tab / window-switch detection via useTabMonitor.
+  //    This works independently of MediaPipe — if the model never loads, tab
+  //    switching is still detected and broadcast.
+  // ---------------------------------------------------------------------------
+  useTabMonitor(({ tabHidden, tabSwitchCount }) => {
+    tabHiddenRef.current = tabHidden;
+    tabSwitchCountRef.current = tabSwitchCount;
+    publish();
+  });
+
+  // ---------------------------------------------------------------------------
+  // 2. Load the FaceLandmarker once. Imported dynamically so the wasm/model code
+  //    never ends up in the SSR/main bundle. numFaces: 2 so we can detect when a
+  //    second person enters the frame.
+  // ---------------------------------------------------------------------------
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -70,7 +120,7 @@ export default function CandidateProctor({ participantId }: Props) {
           vision.FaceLandmarker.createFromOptions(fileset, {
             baseOptions: { modelAssetPath: FACE_LANDMARKER_MODEL_URL, delegate },
             runningMode: 'VIDEO',
-            numFaces: 1,
+            numFaces: 2, // detect up to 2 faces so we can flag multiple-face events
             outputFacialTransformationMatrixes: true,
           });
         // Prefer GPU; fall back to CPU where WebGL is unavailable.
@@ -81,11 +131,12 @@ export default function CandidateProctor({ participantId }: Props) {
         }
         landmarkerRef.current = landmarker;
         setReady(true);
-        // Establish a defined baseline so the interviewer sees a value.
+        // Establish a defined baseline now that the model is live.
         publish();
       } catch {
-        // Detection unavailable (offline, WebGL blocked, …). Stay silent and
-        // non-punitive — the interview is never blocked by proctoring.
+        // Detection unavailable (offline, WebGL blocked, …). Tab-switch
+        // detection above still works — the interview is never blocked by
+        // proctoring failures.
       }
     })();
 
@@ -97,7 +148,9 @@ export default function CandidateProctor({ participantId }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 2. Attach the existing camera track to the offscreen detection video.
+  // ---------------------------------------------------------------------------
+  // 3. Attach the existing camera track to the offscreen detection video.
+  // ---------------------------------------------------------------------------
   useEffect(() => {
     const el = videoRef.current;
     if (!el) return;
@@ -111,19 +164,34 @@ export default function CandidateProctor({ participantId }: Props) {
     }
   }, [webcamStream, webcamOn]);
 
-  // 3. Detection loop — throttled to DETECT_INTERVAL_MS. Pauses when the camera
-  //    is off (we report not-looking-away rather than erroring).
+  // ---------------------------------------------------------------------------
+  // 4. Detection loop — throttled to DETECT_INTERVAL_MS. Pauses when the camera
+  //    is off. On each tick:
+  //
+  //   a) Count faces in the result:
+  //      • faceCount === 0  → noFace = true,  multipleFaces = false
+  //      • faceCount === 1  → noFace = false, multipleFaces = false
+  //      • faceCount  > 1   → noFace = false, multipleFaces = true
+  //
+  //   b) Head-pose on the FIRST face (same debounce logic as before).
+  //
+  //   c) Publish whenever any signal changes.
+  // ---------------------------------------------------------------------------
   useEffect(() => {
     if (!ready) return;
 
     if (!webcamOn) {
-      // Camera off: clear the away state but keep the running count.
+      // Camera off: clear away state but keep running counts.
       awaySinceRef.current = null;
       backSinceRef.current = null;
-      if (lookingAwayRef.current) {
-        lookingAwayRef.current = false;
-        publish();
-      }
+      const changed =
+        lookingAwayRef.current ||
+        multipleFacesRef.current ||
+        noFaceRef.current;
+      lookingAwayRef.current = false;
+      multipleFacesRef.current = false;
+      noFaceRef.current = false;
+      if (changed) publish();
       return;
     }
 
@@ -137,13 +205,17 @@ export default function CandidateProctor({ participantId }: Props) {
       if (ts <= lastTsRef.current) ts = lastTsRef.current + 1;
       lastTsRef.current = ts;
 
+      let faceCount: number;
       let awayThisFrame: boolean;
       try {
         const result = landmarker.detectForVideo(video, ts);
+        faceCount = result.faceLandmarks?.length ?? 0;
+
+        // Head-pose check on the first detected face.
         const matrix = result.facialTransformationMatrixes?.[0]?.data;
-        const faceDetected = (result.faceLandmarks?.length ?? 0) > 0 && !!matrix;
+        const firstFaceDetected = faceCount > 0 && !!matrix;
         awayThisFrame = isAwayThisFrame({
-          faceDetected,
+          faceDetected: firstFaceDetected,
           angles: matrix ? anglesFromMatrix(matrix) : undefined,
           yawThresholdDeg: YAW_THRESHOLD_DEG,
           pitchThresholdDeg: PITCH_THRESHOLD_DEG,
@@ -153,25 +225,42 @@ export default function CandidateProctor({ participantId }: Props) {
       }
 
       const now = ts;
+      let didChange = false;
 
-      // Debounced state machine: away must persist AWAY_DEBOUNCE_MS to latch on;
-      // not-away must persist BACK_DEBOUNCE_MS to latch off (hysteresis).
+      // --- Multiple-face / no-face signals -----------------------------------
+      const newMultiple = faceCount > 1;
+      const newNoFace = faceCount === 0;
+      if (newMultiple !== multipleFacesRef.current) {
+        multipleFacesRef.current = newMultiple;
+        didChange = true;
+      }
+      if (newNoFace !== noFaceRef.current) {
+        noFaceRef.current = newNoFace;
+        didChange = true;
+      }
+
+      // --- Head-pose look-away debounce state machine ------------------------
+      // Away must persist AWAY_DEBOUNCE_MS before we latch lookingAway = true.
+      // Not-away must persist BACK_DEBOUNCE_MS before we latch it back to false
+      // (hysteresis to avoid flicker at the threshold boundary).
       if (awayThisFrame) {
         backSinceRef.current = null;
         if (awaySinceRef.current === null) awaySinceRef.current = now;
         if (!lookingAwayRef.current && now - awaySinceRef.current >= AWAY_DEBOUNCE_MS) {
           lookingAwayRef.current = true;
-          countRef.current += 1; // a new look-away event
-          publish();
+          lookAwayCountRef.current += 1;
+          didChange = true;
         }
       } else {
         awaySinceRef.current = null;
         if (backSinceRef.current === null) backSinceRef.current = now;
         if (lookingAwayRef.current && now - backSinceRef.current >= BACK_DEBOUNCE_MS) {
           lookingAwayRef.current = false;
-          publish();
+          didChange = true;
         }
       }
+
+      if (didChange) publish();
     };
 
     const id = window.setInterval(tick, DETECT_INTERVAL_MS);
@@ -179,7 +268,7 @@ export default function CandidateProctor({ participantId }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, webcamOn]);
 
-  // Offscreen detection source only — nothing visible.
+  // Offscreen detection source only — nothing visible to the candidate.
   return (
     <video
       ref={videoRef}
