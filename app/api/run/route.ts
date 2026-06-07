@@ -7,9 +7,12 @@
 //     installed toolchains. Fast and offline, but ⚠️ UNSANDBOXED — never enable on
 //     a deployed/shared server.
 //
-//   • PISTON (default / production) — posts to the free public Piston API
-//     (emkc.org), a sandboxed multi-language execution service. This is what runs
-//     on the deployed app (Vercel serverless can't compile/exec locally anyway).
+//   • JUDGE0 (default / production) — posts to a Judge0 instance (a sandboxed,
+//     multi-language execution service). This is what runs on the deployed app
+//     (Vercel serverless can't compile/exec locally). Configure with:
+//       JUDGE0_URL            (default: https://judge0-ce.p.rapidapi.com)
+//       JUDGE0_RAPIDAPI_KEY   (your free RapidAPI key for Judge0 CE)
+//     A self-hosted Judge0 needs only JUDGE0_URL (no key).
 
 import { execFile } from 'node:child_process';
 import { mkdtemp, writeFile, rm } from 'node:fs/promises';
@@ -31,75 +34,75 @@ function localExecutionEnabled(): boolean {
   );
 }
 
-// ─── Piston (sandboxed, used in production) ──────────────────────────────────
+// ─── Judge0 (sandboxed, used in production) ──────────────────────────────────
 
-const PISTON = 'https://emkc.org/api/v2/piston';
+const JUDGE0_URL = (process.env.JUDGE0_URL || 'https://judge0-ce.p.rapidapi.com').replace(/\/$/, '');
+const JUDGE0_KEY = process.env.JUDGE0_RAPIDAPI_KEY || '';
 
-// Our language id -> Piston language + source filename.
-const PISTON_LANG: Record<string, { lang: string; file: string }> = {
-  javascript: { lang: 'javascript', file: 'main.js' },
-  python: { lang: 'python', file: 'main.py' },
-  java: { lang: 'java', file: 'Main.java' },
-  c: { lang: 'c', file: 'main.c' },
-  cpp: { lang: 'c++', file: 'main.cpp' },
+// Judge0 CE language ids (stable on the CE distribution).
+const JUDGE0_IDS: Record<string, number> = {
+  javascript: 63, // Node.js
+  python: 71, // Python 3
+  java: 62, // Java (OpenJDK)
+  c: 50, // C (GCC)
+  cpp: 54, // C++ (GCC)
 };
 
-type Runtime = { language: string; version: string; aliases?: string[] };
-let runtimesCache: Runtime[] | null = null;
+async function runViaJudge0(language: string, code: string): Promise<RunResult> {
+  const id = JUDGE0_IDS[language];
+  if (!id) return { stdout: '', stderr: '', error: `Unsupported language: ${language}` };
 
-async function pistonRuntimes(): Promise<Runtime[]> {
-  if (!runtimesCache) {
-    const res = await fetch(`${PISTON}/runtimes`);
-    if (!res.ok) throw new Error(`Piston runtimes ${res.status}`);
-    runtimesCache = (await res.json()) as Runtime[];
+  const usingRapidApi = JUDGE0_URL.includes('rapidapi');
+  if (usingRapidApi && !JUDGE0_KEY) {
+    return {
+      stdout: '',
+      stderr: '',
+      error:
+        'Code execution is not configured on the server. Add JUDGE0_RAPIDAPI_KEY ' +
+        '(free from RapidAPI → Judge0 CE) to the deployment environment.',
+    };
   }
-  return runtimesCache;
-}
 
-async function runViaPiston(language: string, code: string): Promise<RunResult> {
-  const map = PISTON_LANG[language];
-  if (!map) return { stdout: '', stderr: '', error: `Unsupported language: ${language}` };
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (JUDGE0_KEY) {
+    headers['X-RapidAPI-Key'] = JUDGE0_KEY;
+    headers['X-RapidAPI-Host'] = new URL(JUDGE0_URL).host;
+  }
 
-  let version: string;
+  let res: Response;
   try {
-    const runtimes = await pistonRuntimes();
-    const rt = runtimes.find(
-      (r) => r.language === map.lang || r.aliases?.includes(map.lang),
-    );
-    if (!rt) return { stdout: '', stderr: '', error: `${language} is not available right now.` };
-    version = rt.version;
+    res = await fetch(`${JUDGE0_URL}/submissions?base64_encoded=false&wait=true`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ source_code: code, language_id: id }),
+    });
   } catch {
     return { stdout: '', stderr: '', error: 'Code execution service is unreachable.' };
   }
-
-  const res = await fetch(`${PISTON}/execute`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      language: map.lang,
-      version,
-      files: [{ name: map.file, content: code }],
-      run_timeout: TIMEOUT_MS,
-      compile_timeout: COMPILE_TIMEOUT_MS,
-    }),
-  });
   if (!res.ok) {
     return { stdout: '', stderr: '', error: `Execution service error (${res.status}).` };
   }
-  const data = (await res.json()) as {
-    run?: { stdout?: string; stderr?: string; signal?: string | null };
-    compile?: { code?: number; stderr?: string };
+
+  const d = (await res.json()) as {
+    stdout?: string | null;
+    stderr?: string | null;
+    compile_output?: string | null;
+    message?: string | null;
+    status?: { id: number; description: string };
   };
 
-  // Surface a compile failure (C/C++/Java) clearly.
-  if (data.compile && data.compile.code && data.compile.code !== 0) {
-    return { stdout: '', stderr: data.compile.stderr ?? '', error: 'Compilation failed.' };
+  const statusId = d.status?.id ?? 0;
+  if (statusId === 6) {
+    // Compilation error.
+    return { stdout: '', stderr: d.compile_output ?? '', error: 'Compilation failed.' };
   }
-  const run = data.run ?? {};
+  if (statusId === 5) {
+    return { stdout: d.stdout ?? '', stderr: d.stderr ?? '', error: 'Execution timed out.' };
+  }
   return {
-    stdout: run.stdout ?? '',
-    stderr: run.stderr ?? '',
-    error: run.signal ? `Execution terminated (${run.signal}).` : null,
+    stdout: d.stdout ?? '',
+    stderr: d.stderr ?? d.compile_output ?? d.message ?? '',
+    error: null,
   };
 }
 
@@ -192,7 +195,7 @@ export async function POST(request: Request) {
   try {
     const result = localExecutionEnabled()
       ? await runLocal(language, code)
-      : await runViaPiston(language, code);
+      : await runViaJudge0(language, code);
     return Response.json(result);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
