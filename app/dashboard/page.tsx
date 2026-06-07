@@ -1,17 +1,21 @@
-// Interviewer dashboard: list their interviews + create a new one. Candidates and
-// HR get a short note (candidates join via invite links).
+// Interviewer dashboard: sidebar + stats + their interviews + create a new one.
+// Candidates and HR get a short note (candidates join via invite links).
 
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getSessionProfile } from '@/src/features/auth/profile';
-import { listInterviewsForInterviewer } from '@/src/features/interviews/server/interviews';
+import {
+  listInterviewsForInterviewer,
+  type Interview,
+} from '@/src/features/interviews/server/interviews';
 import NewInterviewButton from '@/src/features/interviews/NewInterviewButton';
 import SignOutButton from '@/src/features/auth/SignOutButton';
+import Logo from '@/src/features/brand/Logo';
 
 const STATUS_STYLES: Record<string, string> = {
-  created: 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400',
-  active: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
-  ended: 'bg-zinc-200 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-500',
+  created: 'bg-zinc-500/15 text-zinc-300',
+  active: 'bg-emerald-500/15 text-emerald-300',
+  ended: 'bg-brand/15 text-brandbright',
 };
 
 export default async function DashboardPage() {
@@ -19,73 +23,174 @@ export default async function DashboardPage() {
   if (!session) redirect('/login?next=/dashboard');
 
   const { profile } = session;
+  const interviews =
+    profile.role === 'interviewer'
+      ? await listInterviewsForInterviewer(session.userId)
+      : [];
 
   return (
-    <div className="flex flex-1 flex-col bg-zinc-50 dark:bg-black">
-      <header className="flex items-center justify-between border-b border-zinc-200 px-6 py-3 dark:border-zinc-800">
-        <div>
-          <span className="font-semibold text-zinc-900 dark:text-zinc-50">IntelliInterview</span>
-          <span className="ml-3 text-sm text-zinc-500">
-            {profile.full_name || 'You'} · <span className="capitalize">{profile.role}</span>
-          </span>
-        </div>
-        <SignOutButton />
-      </header>
+    <div className="flex flex-1">
+      <Sidebar name={profile.full_name || 'You'} role={profile.role} />
 
-      <main className="mx-auto w-full max-w-3xl px-6 py-10">
-        {profile.role === 'interviewer' ? (
-          <InterviewerDashboard interviewerId={session.userId} />
-        ) : profile.role === 'hr' ? (
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            HR view (interview &amp; evaluation comparison) is coming in a later
-            milestone. Your role already has read access to all interviews and
-            evaluations.
-          </p>
-        ) : (
-          <div className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-950">
-            <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
-              You&apos;re all set, {profile.full_name || 'candidate'}.
-            </h1>
-            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-              Open the invite link your interviewer shared with you to join your
-              interview room.
-            </p>
-          </div>
-        )}
-      </main>
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* Mobile top bar */}
+        <header className="flex items-center justify-between border-b border-line px-5 py-3 lg:hidden">
+          <Logo href="/" textClassName="text-base" markClassName="h-7 w-7" />
+          <SignOutButton />
+        </header>
+
+        <main className="mx-auto w-full max-w-5xl px-6 py-8">
+          {profile.role === 'interviewer' ? (
+            <InterviewerDashboard
+              interviews={interviews}
+              name={profile.full_name || 'there'}
+            />
+          ) : profile.role === 'hr' ? (
+            <EmptyState
+              title="HR view coming soon"
+              body="Your role already has read access to all interviews and evaluations. The score-comparison view lands in a later milestone."
+            />
+          ) : (
+            <EmptyState
+              title={`You're all set, ${profile.full_name || 'candidate'}.`}
+              body="Open the invite link your interviewer shared with you to join your interview room."
+            />
+          )}
+        </main>
+      </div>
     </div>
   );
 }
 
-async function InterviewerDashboard({ interviewerId }: { interviewerId: string }) {
-  const interviews = await listInterviewsForInterviewer(interviewerId);
+function Sidebar({ name, role }: { name: string; role: string }) {
+  return (
+    <aside className="hidden w-60 shrink-0 flex-col border-r border-line bg-ink2/60 lg:flex">
+      <div className="px-5 py-5">
+        <Logo href="/" textClassName="text-lg" markClassName="h-8 w-8" />
+      </div>
+
+      <nav className="flex-1 px-3">
+        <NavItem href="/dashboard" icon="▦" label="Dashboard" active />
+        <NavItem href="/interview" icon="⌨" label="Coding Pad" />
+        <p className="px-3 pb-1.5 pt-5 text-[10px] font-semibold uppercase tracking-wider text-faint">
+          More
+        </p>
+        <NavItem icon="👥" label="Candidates" soon />
+        <NavItem icon="📑" label="Reports" soon />
+        <NavItem icon="⚙" label="Settings" soon />
+      </nav>
+
+      <div className="border-t border-line p-3">
+        <div className="flex items-center gap-2.5 rounded-xl px-2 py-2">
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-brand2 to-brand text-sm font-semibold text-white">
+            {name.charAt(0).toUpperCase()}
+          </span>
+          <div className="min-w-0 leading-tight">
+            <div className="truncate text-sm font-medium text-zinc-100">{name}</div>
+            <div className="text-xs capitalize text-faint">{role}</div>
+          </div>
+        </div>
+        <div className="mt-2">
+          <SignOutButton />
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+function NavItem({
+  href,
+  icon,
+  label,
+  active,
+  soon,
+}: {
+  href?: string;
+  icon: string;
+  label: string;
+  active?: boolean;
+  soon?: boolean;
+}) {
+  const base =
+    'flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors';
+  if (soon || !href) {
+    return (
+      <div className={`${base} cursor-default text-faint`}>
+        <span className="w-4 text-center">{icon}</span>
+        <span>{label}</span>
+        <span className="ml-auto rounded-full bg-surface px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-faint">
+          soon
+        </span>
+      </div>
+    );
+  }
+  return (
+    <Link
+      href={href}
+      className={`${base} ${
+        active
+          ? 'bg-brand/15 text-white'
+          : 'text-muted hover:bg-surface2 hover:text-white'
+      }`}
+    >
+      <span className="w-4 text-center">{icon}</span>
+      <span>{label}</span>
+    </Link>
+  );
+}
+
+function InterviewerDashboard({
+  interviews,
+  name,
+}: {
+  interviews: Interview[];
+  name: string;
+}) {
+  const active = interviews.filter((i) => i.status === 'active').length;
+  const ended = interviews.filter((i) => i.status === 'ended').length;
+  const candidates = interviews.filter((i) => i.candidate_id).length;
 
   return (
     <>
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-          Your interviews
-        </h1>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-white">
+            Welcome back, {name} 👋
+          </h1>
+          <p className="mt-1 text-sm text-muted">
+            Here&apos;s what&apos;s happening with your interviews.
+          </p>
+        </div>
         <NewInterviewButton />
       </div>
 
+      {/* Stat cards */}
+      <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatCard icon="🗂️" color="bg-brand/15 text-brandbright" label="Total Interviews" value={interviews.length} />
+        <StatCard icon="🟢" color="bg-emerald-500/15 text-emerald-300" label="Active Now" value={active} />
+        <StatCard icon="✅" color="bg-sky-500/15 text-sky-300" label="Completed" value={ended} />
+        <StatCard icon="👤" color="bg-amber-500/15 text-amber-300" label="Candidates Joined" value={candidates} />
+      </div>
+
+      {/* Interviews list */}
+      <h2 className="mb-3 mt-9 text-lg font-semibold text-white">Your interviews</h2>
       {interviews.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-zinc-300 bg-white p-8 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:bg-zinc-950">
-          No interviews yet. Click <strong>New interview</strong> to create one and
-          get a shareable invite link.
-        </p>
+        <div className="card border-dashed p-10 text-center">
+          <p className="text-sm text-muted">
+            No interviews yet. Click <strong className="text-zinc-200">New interview</strong> to
+            create one and get a shareable invite link.
+          </p>
+        </div>
       ) : (
-        <ul className="flex flex-col gap-2">
+        <ul className="flex flex-col gap-2.5">
           {interviews.map((iv) => (
             <li
               key={iv.id}
-              className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950"
+              className="card card-hover flex items-center justify-between px-4 py-3.5"
             >
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-sm text-zinc-900 dark:text-zinc-100">
-                    {iv.room_id}
-                  </span>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2.5">
+                  <span className="font-mono text-sm font-medium text-white">{iv.room_id}</span>
                   <span
                     className={`rounded-full px-2 py-0.5 text-xs font-medium ${
                       STATUS_STYLES[iv.status] ?? ''
@@ -94,24 +199,18 @@ async function InterviewerDashboard({ interviewerId }: { interviewerId: string }
                     {iv.status}
                   </span>
                   {iv.candidate_id && (
-                    <span className="text-xs text-zinc-400">candidate joined</span>
+                    <span className="hidden text-xs text-faint sm:inline">candidate joined</span>
                   )}
                 </div>
-                <span className="text-xs text-zinc-500">
+                <span className="text-xs text-faint">
                   {new Date(iv.created_at).toLocaleString()}
                 </span>
               </div>
-              <div className="flex gap-2">
-                <Link
-                  href={`/interviews/${iv.id}`}
-                  className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-                >
+              <div className="flex shrink-0 gap-2">
+                <Link href={`/interviews/${iv.id}`} className="btn-ghost px-3.5 py-1.5">
                   Details
                 </Link>
-                <Link
-                  href={`/room/${iv.room_id}`}
-                  className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-500"
-                >
+                <Link href={`/room/${iv.room_id}`} className="btn-primary px-3.5 py-1.5">
                   Open
                 </Link>
               </div>
@@ -120,5 +219,34 @@ async function InterviewerDashboard({ interviewerId }: { interviewerId: string }
         </ul>
       )}
     </>
+  );
+}
+
+function StatCard({
+  icon,
+  color,
+  label,
+  value,
+}: {
+  icon: string;
+  color: string;
+  label: string;
+  value: number;
+}) {
+  return (
+    <div className="card p-4">
+      <span className={`chip ${color}`}>{icon}</span>
+      <div className="mt-3 text-2xl font-bold text-white">{value}</div>
+      <div className="text-xs text-muted">{label}</div>
+    </div>
+  );
+}
+
+function EmptyState({ title, body }: { title: string; body: string }) {
+  return (
+    <div className="card p-8">
+      <h1 className="text-lg font-semibold text-white">{title}</h1>
+      <p className="mt-2 text-sm text-muted">{body}</p>
+    </div>
   );
 }

@@ -1,26 +1,75 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* IntelliInterview design system — warm "Claude orange" accent on neutral dark
+   surfaces (palette inspired by ~/Documents/suits). Tokens below become Tailwind
+   utilities, e.g. --color-ink => bg-ink, --color-brand => bg-brand/text-brand. */
+@theme {
+  --color-ink: #0b0b0d;        /* page background */
+  --color-ink2: #131316;       /* alt background */
+  --color-surface: #1b1b1f;    /* cards / panels */
+  --color-surface2: #26262b;   /* raised surfaces / hovers */
+  --color-line: #2a2a30;       /* hairline borders */
+  --color-line2: #3a3a42;      /* stronger borders */
+  --color-muted: #a1a1aa;      /* secondary text */
+  --color-faint: #71717a;      /* tertiary text */
+  --color-brand: #e07733;      /* primary orange */
+  --color-brand2: #c85a1e;     /* deeper orange (hover) */
+  --color-brandbright: #f3b07f;/* light orange (text/accents on dark) */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  background: var(--color-ink);
+  color: #f4f3f1;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+/* ----- Reusable component classes ----- */
+@layer components {
+  .card {
+    @apply rounded-2xl border border-line bg-surface;
+  }
+  .card-hover {
+    @apply transition-colors hover:border-line2 hover:bg-surface2;
+  }
+  /* Solid, understated primary — no flashy gradients. */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-5 py-2.5
+      text-sm font-semibold text-white transition-colors hover:bg-brand2
+      disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border
+      border-line2 bg-surface px-5 py-2.5 text-sm font-semibold text-zinc-200
+      transition-colors hover:bg-surface2;
+  }
+  .input {
+    @apply w-full rounded-xl border border-line bg-ink2 px-3.5 py-2.5 text-sm
+      text-zinc-100 placeholder-faint outline-none transition-colors
+      focus:border-brand;
+  }
+  .chip {
+    @apply inline-flex h-10 w-10 items-center justify-center rounded-xl text-lg;
+  }
+  .brand-gradient-text {
+    @apply text-brand;
+  }
+}
+
+/* Hide the third-party "Powered by Liveblocks" free-tier badge. */
+#liveblocks-badge,
+a[href*="liveblocks.io"],
+[class*="lb-Badge"],
+[data-liveblocks-badge] {
+  display: none !important;
 }
