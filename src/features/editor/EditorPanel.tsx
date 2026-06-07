@@ -142,20 +142,30 @@ export default function EditorPanel({ role, name, apiRef }: Props) {
     <div className="flex min-h-0 flex-1 flex-col bg-zinc-950">
       {/* Toolbar */}
       <div className="flex items-center justify-between gap-3 border-b border-zinc-800 px-4 py-2.5">
-        <label className="flex items-center gap-2 text-sm text-zinc-400">
-          Language
-          <select
-            value={language}
-            onChange={(e) => setLanguage(e.target.value as SupportedLanguage)}
-            className="rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-sm text-zinc-100 outline-none focus:border-zinc-500"
-          >
-            {LANGUAGES.map((l) => (
-              <option key={l.id} value={l.id}>
-                {l.label}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted">Language</span>
+          <div className="relative">
+            <select
+              value={language}
+              onChange={(e) => setLanguage(e.target.value as SupportedLanguage)}
+              className="cursor-pointer appearance-none rounded-lg border border-line bg-surface py-1.5 pl-3 pr-9 text-sm font-medium text-zinc-100 outline-none transition-colors hover:bg-surface2 focus:border-brand"
+            >
+              {LANGUAGES.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.label}
+                </option>
+              ))}
+            </select>
+            <svg
+              viewBox="0 0 16 16"
+              fill="none"
+              aria-hidden
+              className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
+            >
+              <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+        </div>
 
         <button
           onClick={handleRun}
