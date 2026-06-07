@@ -58,49 +58,44 @@ export default function TranscriptView({
     <div className="flex flex-col gap-6">
       {/* Audio playback */}
       <section>
-        <h2 className="mb-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">Recordings</h2>
+        <h2 className="mb-2 text-sm font-semibold text-zinc-100">Recordings</h2>
         {hasAudio ? (
           <div className="grid gap-3 sm:grid-cols-2">
             <AudioCard label="Interviewer" url={audio.interviewer} />
             <AudioCard label="Candidate" url={audio.candidate} />
           </div>
         ) : (
-          <p className="text-sm text-zinc-500">No audio was recorded for this interview.</p>
+          <p className="text-sm text-muted">No audio was recorded for this interview.</p>
         )}
       </section>
 
       {/* Re-run control (interviewer only) */}
       {canRerun && hasAudio && (
-        <section className="rounded-lg border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-950">
+        <section className="card p-3">
           {phase === 'running' ? (
-            <div className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-300">
-              <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-zinc-400 border-t-transparent" />
+            <div className="flex items-center gap-2 text-sm text-zinc-300">
+              <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-zinc-500 border-t-transparent" />
               {status || 'Transcribing locally, this may take a few minutes…'}
             </div>
           ) : (
             <div className="flex items-center justify-between gap-3">
-              <span className="text-sm text-zinc-600 dark:text-zinc-400">
+              <span className="text-sm text-muted">
                 {hasTranscript ? 'Re-run transcription in your browser.' : 'No transcript yet.'}
               </span>
-              <button
-                onClick={rerun}
-                className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-500"
-              >
+              <button onClick={rerun} className="btn-primary px-3 py-1.5">
                 {hasTranscript ? 'Re-run transcription' : 'Transcribe now'}
               </button>
             </div>
           )}
-          {phase === 'error' && (
-            <p className="mt-2 text-sm text-rose-600 dark:text-rose-300">Failed: {error}</p>
-          )}
+          {phase === 'error' && <p className="mt-2 text-sm text-rose-300">Failed: {error}</p>}
         </section>
       )}
 
       {/* Transcript conversation */}
       <section>
-        <h2 className="mb-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">Transcript</h2>
+        <h2 className="mb-2 text-sm font-semibold text-zinc-100">Transcript</h2>
         {initialSegments.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-zinc-300 bg-white p-6 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:bg-zinc-950">
+          <p className="card border-dashed p-6 text-center text-sm text-muted">
             No transcript yet.
             {canRerun && hasAudio
               ? ' Use “Transcribe now” above.'
@@ -113,23 +108,21 @@ export default function TranscriptView({
                 key={i}
                 className={`flex gap-3 rounded-lg border p-2.5 text-sm ${
                   s.role === 'interviewer'
-                    ? 'border-indigo-200 bg-indigo-50 dark:border-indigo-500/30 dark:bg-indigo-500/10'
-                    : 'border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950'
+                    ? 'border-brand/30 bg-brand/10'
+                    : 'border-line bg-surface'
                 }`}
               >
                 <span className="w-20 shrink-0">
                   <span
                     className={`block text-xs font-semibold capitalize ${
-                      s.role === 'interviewer'
-                        ? 'text-indigo-700 dark:text-indigo-300'
-                        : 'text-zinc-700 dark:text-zinc-300'
+                      s.role === 'interviewer' ? 'text-brandbright' : 'text-zinc-300'
                     }`}
                   >
                     {s.role}
                   </span>
-                  <span className="text-[10px] text-zinc-400">{fmt(s.start)}</span>
+                  <span className="text-[10px] text-faint">{fmt(s.start)}</span>
                 </span>
-                <span className="text-zinc-800 dark:text-zinc-200">{s.text}</span>
+                <span className="text-zinc-200">{s.text}</span>
               </li>
             ))}
           </ul>
@@ -141,12 +134,12 @@ export default function TranscriptView({
 
 function AudioCard({ label, url }: { label: string; url: string | null }) {
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-950">
-      <div className="mb-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-400">{label}</div>
+    <div className="card p-3">
+      <div className="mb-1.5 text-xs font-medium text-muted">{label}</div>
       {url ? (
         <audio controls src={url} className="w-full" />
       ) : (
-        <p className="text-xs text-zinc-400">No recording.</p>
+        <p className="text-xs text-faint">No recording.</p>
       )}
     </div>
   );

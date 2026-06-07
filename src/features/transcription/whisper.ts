@@ -27,6 +27,11 @@ async function getTranscriber(onStatus?: StatusFn): Promise<
       const { pipeline } = await import('@huggingface/transformers');
       return pipeline('automatic-speech-recognition', MODEL_ID);
     })();
+    // If loading fails, clear the cached (rejected) promise so a later attempt
+    // can retry instead of being stuck with the same failure forever.
+    transcriberPromise.catch(() => {
+      transcriberPromise = null;
+    });
   }
   return transcriberPromise as Promise<
     (audio: Float32Array, opts: Record<string, unknown>) => Promise<{
