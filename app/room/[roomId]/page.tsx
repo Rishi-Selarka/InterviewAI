@@ -70,7 +70,7 @@ export default async function RoomPage({
 
 function RoomMessage({ title, body }: { title: string; body: string }) {
   return (
-    <div className="flex h-[100dvh] flex-col items-center justify-center px-6 text-center">
+    <div data-theme="dark" className="flex h-[100dvh] flex-col items-center justify-center bg-ink px-6 text-center">
       <div className="mb-8">
         <Logo href="/" textClassName="text-xl" markClassName="h-9 w-9" />
       </div>

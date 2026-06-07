@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Logo from '@/src/features/brand/Logo';
 import GuestStart from '@/src/features/landing/GuestStart';
 import Icon, { type IconName } from '@/src/features/ui/Icon';
+import ThemeToggle from '@/src/features/ui/ThemeToggle';
 
 export default function Home() {
   return (
@@ -14,12 +15,15 @@ export default function Home() {
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-3.5">
           <Logo href="/" />
           <nav className="hidden items-center gap-7 text-sm text-muted md:flex">
-            <a href="#features" className="transition-colors hover:text-white">Features</a>
-            <Link href="/interview" className="transition-colors hover:text-white">Coding Pad</Link>
+            <a href="#features" className="transition-colors hover:text-strong">Features</a>
+            <Link href="/interview" className="transition-colors hover:text-strong">Coding Pad</Link>
           </nav>
-          <Link href="/login" className="btn-primary px-4 py-2">
-            Log in
-          </Link>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Link href="/login" className="btn-primary px-4 py-2">
+              Log in
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -29,7 +33,7 @@ export default function Home() {
           <span className="inline-flex items-center gap-2 rounded-full border border-line2 bg-surface px-3 py-1 text-xs font-medium text-brandbright">
             ● Smart Interviews, Smarter Hiring
           </span>
-          <h1 className="mt-5 text-4xl font-bold leading-[1.1] tracking-tight text-white sm:text-5xl">
+          <h1 className="mt-5 text-4xl font-bold leading-[1.1] tracking-tight text-strong sm:text-5xl">
             The Intelligent Way to{' '}
             <span className="brand-gradient-text">Conduct Coding Interviews</span>
           </h1>
@@ -57,7 +61,7 @@ export default function Home() {
             <span className="h-3 w-3 rounded-full bg-amber-400/80" />
             <span className="h-3 w-3 rounded-full bg-emerald-500/80" />
             <span className="ml-3 text-xs text-faint">solution.py — live room</span>
-            <span className="ml-auto rounded-md bg-gradient-to-r from-brand2 to-brand px-2.5 py-1 text-[11px] font-semibold text-white">
+            <span className="ml-auto rounded-md bg-gradient-to-r from-brand2 to-brand px-2.5 py-1 text-[11px] font-semibold text-strong">
               ▶ Run
             </span>
           </div>
@@ -81,7 +85,7 @@ export default function Home() {
 
       {/* Features */}
       <section id="features" className="mx-auto w-full max-w-6xl px-6 pb-20">
-        <h2 className="text-center text-2xl font-bold tracking-tight text-white">
+        <h2 className="text-center text-2xl font-bold tracking-tight text-strong">
           Everything you need for a great interview
         </h2>
         <p className="mx-auto mt-2 max-w-xl text-center text-sm text-muted">
@@ -134,7 +138,7 @@ function HeroPill({ icon, title, subtitle }: { icon: IconName; title: string; su
         <Icon name={icon} className="h-5 w-5" />
       </span>
       <div className="leading-tight">
-        <div className="text-sm font-semibold text-white">{title}</div>
+        <div className="text-sm font-semibold text-strong">{title}</div>
         <div className="text-xs text-faint">{subtitle}</div>
       </div>
     </div>
@@ -157,7 +161,7 @@ function FeatureCard({
       <span className={`chip ${color}`}>
         <Icon name={icon} className="h-5 w-5" />
       </span>
-      <h3 className="mt-4 text-base font-semibold text-white">{title}</h3>
+      <h3 className="mt-4 text-base font-semibold text-strong">{title}</h3>
       <p className="mt-1.5 text-sm leading-relaxed text-muted">{body}</p>
     </div>
   );

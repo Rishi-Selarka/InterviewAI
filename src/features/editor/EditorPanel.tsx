@@ -159,7 +159,11 @@ export default function EditorPanel({ role, name, apiRef }: Props) {
 
         <button
           onClick={handleRun}
-          disabled={busy}
+          // Disable ONLY on this client's in-flight run (prevents double-submit).
+          // Do NOT gate on the shared `running` flag: if a peer disconnects
+          // mid-run, that flag stays true in persistent Liveblocks Storage and
+          // would otherwise disable Run for everyone for the rest of the session.
+          disabled={localRunning}
           className="rounded-lg bg-brand px-5 py-1.5 text-sm font-semibold text-white shadow-lg shadow-brand/20 transition-colors hover:bg-brand2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
         >
           {busy ? 'Running…' : '▶ Run Code'}

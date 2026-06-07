@@ -10,6 +10,7 @@ import {
 import { listInterviewsForInterviewer } from '@/src/features/interviews/server/interviews';
 import Logo from '@/src/features/brand/Logo';
 import ProfileForm from '@/src/features/auth/ProfileForm';
+import ThemeToggle from '@/src/features/ui/ThemeToggle';
 
 export default async function ProfilePage() {
   const session = await getSessionProfile();
@@ -26,10 +27,12 @@ export default async function ProfilePage() {
       <header className="border-b border-line bg-ink2/70">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-3.5">
           <Logo href="/" markClassName="h-7 w-7" textClassName="text-base" />
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-zinc-100"
-          >
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-strong"
+            >
             <svg
               viewBox="0 0 16 16"
               fill="none"
@@ -45,7 +48,8 @@ export default async function ProfilePage() {
               />
             </svg>
             Dashboard
-          </Link>
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -62,14 +66,14 @@ export default async function ProfilePage() {
                 className="h-20 w-20 shrink-0 rounded-full object-cover ring-2 ring-line2"
               />
             ) : (
-              <span className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand2 to-brand text-2xl font-bold text-white ring-2 ring-line2">
+              <span className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand2 to-brand text-2xl font-bold text-strong ring-2 ring-line2">
                 {initial}
               </span>
             )}
 
             {/* Identity */}
             <div className="min-w-0 flex-1">
-              <h1 className="text-xl font-bold leading-tight text-white">{name}</h1>
+              <h1 className="text-xl font-bold leading-tight text-strong">{name}</h1>
 
               {profile.username && (
                 <p className="mt-0.5 text-sm text-muted">@{profile.username}</p>
@@ -80,13 +84,13 @@ export default async function ProfilePage() {
               )}
 
               {profile.headline && (
-                <p className="mt-2 text-sm text-zinc-300">{profile.headline}</p>
+                <p className="mt-2 text-sm text-fg">{profile.headline}</p>
               )}
             </div>
 
             {/* Stat */}
             <div className="card shrink-0 bg-surface2 px-5 py-3 text-center">
-              <div className="text-2xl font-bold text-white">{hosted}</div>
+              <div className="text-2xl font-bold text-strong">{hosted}</div>
               <div className="mt-0.5 text-xs text-muted">Interviews hosted</div>
             </div>
           </div>

@@ -7,15 +7,11 @@ import { useRouter } from 'next/navigation';
 import Logo from '@/src/features/brand/Logo';
 import type { Role } from './liveblocks.config';
 
-function newRoomId(): string {
-  return crypto.randomUUID().split('-')[0];
-}
-
 export default function SessionEnded({ role }: { role: Role }) {
   const router = useRouter();
 
   return (
-    <div className="flex h-[100dvh] flex-col items-center justify-center gap-6 px-6 text-center">
+    <div data-theme="dark" className="flex h-[100dvh] flex-col items-center justify-center gap-6 bg-ink px-6 text-center">
       <Logo href="/" textClassName="text-xl" markClassName="h-9 w-9" />
       <div className="card max-w-md p-8">
         <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-brand/15 text-2xl">
@@ -30,7 +26,7 @@ export default function SessionEnded({ role }: { role: Role }) {
         <div className="mt-6 flex flex-col justify-center gap-2 sm:flex-row">
           {role === 'interviewer' && (
             <button
-              onClick={() => router.push(`/room/${newRoomId()}?role=interviewer`)}
+              onClick={() => router.push('/dashboard')}
               className="btn-primary"
             >
               Start new interview

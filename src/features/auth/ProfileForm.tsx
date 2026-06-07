@@ -60,7 +60,7 @@ export default function ProfileForm({ initial, email }: Props) {
 
   return (
     <form onSubmit={handleSave} className="card p-6">
-      <h2 className="mb-5 text-base font-semibold text-white">Edit profile</h2>
+      <h2 className="mb-5 text-base font-semibold text-strong">Edit profile</h2>
 
       {/* Full name + username — 2 columns on sm+ */}
       <div className="grid gap-4 sm:grid-cols-2">

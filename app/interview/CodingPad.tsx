@@ -55,7 +55,7 @@ export default function CodingPad() {
   };
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-6 text-zinc-100">
+    <div data-theme="dark" className="flex flex-1 flex-col gap-4 bg-ink p-6 text-zinc-100">
       <header className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <Logo href="/" textClassName="text-base" markClassName="h-7 w-7" />

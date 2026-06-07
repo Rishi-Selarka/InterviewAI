@@ -10,6 +10,7 @@ import { createClient } from '@/src/features/auth/supabase/client';
 import { safeNext } from '@/src/features/auth/safeNext';
 import GoogleButton from '@/src/features/auth/GoogleButton';
 import Logo from '@/src/features/brand/Logo';
+import ThemeToggle from '@/src/features/ui/ThemeToggle';
 
 function LoginForm() {
   const router = useRouter();
@@ -62,13 +63,16 @@ function LoginForm() {
   };
 
   return (
-    <div className="flex flex-1 items-center justify-center px-6 py-16">
+    <div className="relative flex flex-1 items-center justify-center px-6 py-16">
+      <div className="absolute right-4 top-4">
+        <ThemeToggle />
+      </div>
       <div className="w-full max-w-sm">
         <div className="mb-8 flex justify-center">
           <Logo href="/" textClassName="text-xl" markClassName="h-9 w-9" />
         </div>
         <div className="card p-7 shadow-2xl shadow-black/40">
-          <h1 className="text-2xl font-bold tracking-tight text-white">Welcome</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-strong">Welcome</h1>
           <p className="mb-6 mt-1 text-sm text-muted">Log in to IntelliInterview.</p>
 
           <GoogleButton next={next} />

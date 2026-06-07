@@ -58,7 +58,7 @@ export default function RoomLayout({ roomId, role, name, interviewId, guest }: P
   const isInterviewer = role === 'interviewer';
 
   return (
-    <div className="flex h-[100dvh] flex-col overflow-hidden bg-ink">
+    <div data-theme="dark" className="flex h-[100dvh] flex-col overflow-hidden bg-ink">
       <TopBar
         roomId={roomId}
         role={role}

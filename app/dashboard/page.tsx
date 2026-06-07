@@ -12,9 +12,10 @@ import NewInterviewButton from '@/src/features/interviews/NewInterviewButton';
 import SignOutButton from '@/src/features/auth/SignOutButton';
 import Logo from '@/src/features/brand/Logo';
 import Icon, { type IconName } from '@/src/features/ui/Icon';
+import ThemeToggle from '@/src/features/ui/ThemeToggle';
 
 const STATUS_STYLES: Record<string, string> = {
-  created: 'bg-zinc-500/15 text-zinc-300',
+  created: 'bg-zinc-500/15 text-fg',
   active: 'bg-emerald-500/15 text-emerald-300',
   ended: 'bg-brand/15 text-brandbright',
 };
@@ -36,6 +37,7 @@ export default async function DashboardPage() {
         <header className="flex items-center justify-between border-b border-line px-5 py-3 lg:hidden">
           <Logo href="/" textClassName="text-base" markClassName="h-7 w-7" />
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             <Link href="/profile" className="btn-ghost px-3 py-1.5">Profile</Link>
             <SignOutButton />
           </div>
@@ -52,8 +54,9 @@ export default async function DashboardPage() {
 function Sidebar({ name, avatarUrl }: { name: string; avatarUrl: string }) {
   return (
     <aside className="hidden w-60 shrink-0 flex-col border-r border-line bg-ink2/60 lg:flex">
-      <div className="px-5 py-5">
+      <div className="flex items-center justify-between px-5 py-5">
         <Logo href="/" textClassName="text-lg" markClassName="h-8 w-8" />
+        <ThemeToggle />
       </div>
 
       <nav className="flex-1 px-3">
@@ -74,7 +77,7 @@ function Sidebar({ name, avatarUrl }: { name: string; avatarUrl: string }) {
         >
           <Avatar name={name} url={avatarUrl} />
           <div className="min-w-0 leading-tight">
-            <div className="truncate text-sm font-medium text-zinc-100">{name}</div>
+            <div className="truncate text-sm font-medium text-strong">{name}</div>
             <div className="text-xs text-faint">View profile</div>
           </div>
         </Link>
@@ -92,7 +95,7 @@ function Avatar({ name, url }: { name: string; url: string }) {
     return <img src={url} alt={name} className="h-9 w-9 shrink-0 rounded-full object-cover" />;
   }
   return (
-    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand text-sm font-semibold text-white">
+    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand text-sm font-semibold text-strong">
       {name.charAt(0).toUpperCase()}
     </span>
   );
@@ -128,7 +131,7 @@ function NavItem({
     <Link
       href={href}
       className={`${base} ${
-        active ? 'bg-brand/15 text-white' : 'text-muted hover:bg-surface2 hover:text-white'
+        active ? 'bg-brand/15 text-strong' : 'text-muted hover:bg-surface2 hover:text-strong'
       }`}
     >
       <Icon name={icon} className="h-[18px] w-[18px]" />
@@ -152,7 +155,7 @@ function InterviewerDashboard({
     <>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white">Welcome back, {name} 👋</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-strong">Welcome back, {name} 👋</h1>
           <p className="mt-1 text-sm text-muted">Create an interview and share the invite link.</p>
         </div>
         <NewInterviewButton />
@@ -165,11 +168,11 @@ function InterviewerDashboard({
         <StatCard icon="user" color="bg-amber-500/15 text-amber-300" label="Candidates Joined" value={candidates} />
       </div>
 
-      <h2 className="mb-3 mt-9 text-lg font-semibold text-white">Your interviews</h2>
+      <h2 className="mb-3 mt-9 text-lg font-semibold text-strong">Your interviews</h2>
       {interviews.length === 0 ? (
         <div className="card border-dashed p-10 text-center">
           <p className="text-sm text-muted">
-            No interviews yet. Click <strong className="text-zinc-200">New interview</strong> to
+            No interviews yet. Click <strong className="text-fg">New interview</strong> to
             create one and get a shareable invite link.
           </p>
         </div>
@@ -179,7 +182,7 @@ function InterviewerDashboard({
             <li key={iv.id} className="card card-hover flex items-center justify-between px-4 py-3.5">
               <div className="min-w-0">
                 <div className="flex items-center gap-2.5">
-                  <span className="font-mono text-sm font-medium text-white">{iv.room_id}</span>
+                  <span className="font-mono text-sm font-medium text-strong">{iv.room_id}</span>
                   <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[iv.status] ?? ''}`}>
                     {iv.status}
                   </span>
@@ -217,7 +220,7 @@ function StatCard({
       <span className={`chip ${color}`}>
         <Icon name={icon} className="h-5 w-5" />
       </span>
-      <div className="mt-3 text-2xl font-bold text-white">{value}</div>
+      <div className="mt-3 text-2xl font-bold text-strong">{value}</div>
       <div className="text-xs text-muted">{label}</div>
     </div>
   );

@@ -50,7 +50,7 @@ export default function NewInterviewButton() {
   if (roomId) {
     return (
       <div className="card w-full border-brand/30 bg-brand/5 p-4 sm:max-w-md">
-        <p className="text-sm font-medium text-zinc-100">
+        <p className="text-sm font-medium text-strong">
           Interview <span className="font-mono text-brandbright">{roomId}</span> created. Share
           this link with your candidate:
         </p>
@@ -59,7 +59,7 @@ export default function NewInterviewButton() {
             readOnly
             value={inviteLink}
             onFocus={(e) => e.currentTarget.select()}
-            className="flex-1 rounded-xl border border-line bg-ink2 px-3 py-2 font-mono text-xs text-zinc-300"
+            className="flex-1 rounded-xl border border-line bg-ink2 px-3 py-2 font-mono text-xs text-fg"
           />
           <button onClick={copy} className="btn-ghost px-4 py-2">
             {copied ? '✓ Copied' : 'Copy'}

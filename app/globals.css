@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
-/* IntelliInterview design system — warm "Claude orange" accent on neutral dark
-   surfaces (palette inspired by ~/Documents/suits). Tokens below become Tailwind
-   utilities, e.g. --color-ink => bg-ink, --color-brand => bg-brand/text-brand. */
+/* IntelliInterview design system — warm "Claude orange" accent (palette inspired
+   by ~/Documents/suits). Tokens are CSS variables, so the dark/light overrides
+   below flip the entire token-based UI. Defaults here = DARK. */
 @theme {
   --color-ink: #0b0b0d;        /* page background */
   --color-ink2: #131316;       /* alt background */
@@ -12,29 +12,64 @@
   --color-line2: #3a3a42;      /* stronger borders */
   --color-muted: #a1a1aa;      /* secondary text */
   --color-faint: #71717a;      /* tertiary text */
+  --color-fg: #ececf2;         /* body text */
+  --color-strong: #ffffff;     /* headings / strong text */
   --color-brand: #e07733;      /* primary orange */
   --color-brand2: #c85a1e;     /* deeper orange (hover) */
-  --color-brandbright: #f3b07f;/* light orange (text/accents on dark) */
+  --color-brandbright: #f3b07f;/* accent text/icons */
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-:root {
+/* DARK (default + explicit, so a nested data-theme="dark" can force it). */
+:root,
+[data-theme='dark'] {
   color-scheme: dark;
+  --color-ink: #0b0b0d;
+  --color-ink2: #131316;
+  --color-surface: #1b1b1f;
+  --color-surface2: #26262b;
+  --color-line: #2a2a30;
+  --color-line2: #3a3a42;
+  --color-muted: #a1a1aa;
+  --color-faint: #71717a;
+  --color-fg: #ececf2;
+  --color-strong: #ffffff;
+  --color-brandbright: #f3b07f;
+}
+
+/* LIGHT — warm cream surfaces, dark text (the suits light palette).
+   `html[data-theme='light']` (specificity 0,1,1) beats the dark `:root` (0,1,0)
+   so it wins at the page level; plain `[data-theme='dark']` still forces dark on
+   nested workspace elements (the interview room / editor). */
+html[data-theme='light'],
+[data-theme='light'] {
+  color-scheme: light;
+  --color-ink: #f7f5ec;
+  --color-ink2: #efece0;
+  --color-surface: #ffffff;
+  --color-surface2: #f2efe5;
+  --color-line: #e6e2d4;
+  --color-line2: #d8d3c2;
+  --color-muted: #6b6757;
+  --color-faint: #908b79;
+  --color-fg: #3a372b;
+  --color-strong: #1b1810;
+  --color-brandbright: #b8541d; /* darker orange for contrast on light */
 }
 
 html,
 body {
   background: var(--color-ink);
-  color: #f4f3f1;
+  color: var(--color-fg);
 }
 
 body {
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
 
-/* ----- Reusable component classes ----- */
+/* ----- Reusable component classes (token-based, so they flip with the theme) ----- */
 @layer components {
   .card {
     @apply rounded-2xl border border-line bg-surface;
@@ -42,7 +77,7 @@ body {
   .card-hover {
     @apply transition-colors hover:border-line2 hover:bg-surface2;
   }
-  /* Solid, understated primary — no flashy gradients. */
+  /* Solid, understated primary — orange in both themes. */
   .btn-primary {
     @apply inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-5 py-2.5
       text-sm font-semibold text-white transition-colors hover:bg-brand2
@@ -50,12 +85,12 @@ body {
   }
   .btn-ghost {
     @apply inline-flex items-center justify-center gap-2 rounded-xl border
-      border-line2 bg-surface px-5 py-2.5 text-sm font-semibold text-zinc-200
+      border-line2 bg-surface px-5 py-2.5 text-sm font-semibold text-fg
       transition-colors hover:bg-surface2;
   }
   .input {
     @apply w-full rounded-xl border border-line bg-ink2 px-3.5 py-2.5 text-sm
-      text-zinc-100 placeholder-faint outline-none transition-colors
+      text-fg placeholder-faint outline-none transition-colors
       focus:border-brand;
   }
   .chip {

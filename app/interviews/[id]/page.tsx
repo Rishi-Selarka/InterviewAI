@@ -59,7 +59,7 @@ export default async function InterviewDetailPage({
   const hasAudio = !!(interviewerUrl || candidateUrl);
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div data-theme="dark" className="flex flex-1 flex-col bg-ink">
       <header className="flex items-center justify-between border-b border-line px-6 py-3">
         <div className="flex items-center gap-3">
           <Link href="/dashboard" className="text-sm text-muted hover:text-white">
