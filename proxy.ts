@@ -1,7 +1,9 @@
 import type { NextRequest } from 'next/server';
 import { updateSession } from '@/src/features/auth/supabase/middleware';
 
-export async function middleware(request: NextRequest) {
+// Next.js 16 renamed the "middleware" convention to "proxy"; the behaviour is
+// identical. This refreshes the Supabase auth session cookie on every request.
+export async function proxy(request: NextRequest) {
   return updateSession(request);
 }
 
