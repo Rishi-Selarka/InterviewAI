@@ -21,6 +21,8 @@ interface Props {
   onLocalWebcamTrack?: (track: MediaStreamTrack | null) => void;
   /** Interviewer-only: populated with the dual-stream audio recorder controls. */
   recorderRef?: React.RefObject<RecorderApi | null>;
+  /** No-login demo mode: skip audio recording (no DB to store/transcribe to). */
+  guest?: boolean;
 }
 
 type Fetched =
@@ -28,7 +30,7 @@ type Fetched =
   | { status: 'error'; message: string }
   | { status: 'ready'; token: string; meetingId: string };
 
-export default function VideoPanel({ roomId, role, name, onLocalWebcamTrack, recorderRef }: Props) {
+export default function VideoPanel({ roomId, role, name, onLocalWebcamTrack, recorderRef, guest }: Props) {
   const [state, setState] = useState<Fetched>({ status: 'loading' });
 
   useEffect(() => {
@@ -88,7 +90,7 @@ export default function VideoPanel({ roomId, role, name, onLocalWebcamTrack, rec
         debugMode: false,
       }}
     >
-      <MeetingView role={role} onLocalWebcamTrack={onLocalWebcamTrack} recorderRef={recorderRef} />
+      <MeetingView role={role} onLocalWebcamTrack={onLocalWebcamTrack} recorderRef={recorderRef} guest={guest} />
     </MeetingProvider>
   );
 }

@@ -23,9 +23,59 @@ interface Props {
   onLocalWebcamTrack?: (track: MediaStreamTrack | null) => void;
   /** Interviewer-only: populated with the dual-stream audio recorder controls. */
   recorderRef?: React.RefObject<RecorderApi | null>;
+  /** No-login demo mode: skip audio recording. */
+  guest?: boolean;
 }
 
-export default function MeetingView({ role, onLocalWebcamTrack, recorderRef }: Props) {
+// ─── Inline SVG icons ────────────────────────────────────────────────────────
+
+function IconMicOn() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+      <path d="M7 4a3 3 0 016 0v6a3 3 0 11-6 0V4zm-2 6a5 5 0 0010 0h1.5a6.5 6.5 0 01-13 0H5zm5 8a1 1 0 01-1-1v-1.5a1 1 0 012 0V17a1 1 0 01-1 1z" />
+    </svg>
+  );
+}
+
+function IconMicOff() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+      <path d="M9.293 2.293a1 1 0 011.414 0l.3.3A3 3 0 0113 5.586V10a3 3 0 01-.17 1.006l1.665 1.665A4.978 4.978 0 0015 10h1.5a6.5 6.5 0 01-2.9 5.394l1.253 1.253a1 1 0 01-1.414 1.414L2.293 3.707a1 1 0 011.414-1.414l5.586 5.586V4a3 3 0 011-2.293zM5 10a4.978 4.978 0 00.766 2.67L4.512 11.416A6.44 6.44 0 013.5 10H5zm5 8a1 1 0 01-1-1v-1.5a1 1 0 012 0V17a1 1 0 01-1 1z" />
+    </svg>
+  );
+}
+
+function IconCameraOn() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+      <path d="M2 6a2 2 0 012-2h9a2 2 0 012 2v2.5l3-2v7l-3-2V14a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+    </svg>
+  );
+}
+
+function IconCameraOff() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+      <path d="M2.293 2.293a1 1 0 011.414 0L18 16.586a1 1 0 01-1.414 1.414l-2.14-2.14A2 2 0 0113 16H4a2 2 0 01-2-2V6c0-.195.028-.383.081-.562L2.293 3.707a1 1 0 010-1.414zM18 5.5l-3 2V6a2 2 0 00-2-2h-.086L18 9.086V5.5z" />
+    </svg>
+  );
+}
+
+function IconHangUp() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+      <path
+        fillRule="evenodd"
+        d="M2.25 6.108a13.5 13.5 0 0115.5 0 .75.75 0 01.25.569v1.5a.75.75 0 01-.75.75h-2a.75.75 0 01-.75-.75v-.687a11.008 11.008 0 00-9.5 0v.687a.75.75 0 01-.75.75h-2a.75.75 0 01-.75-.75v-1.5a.75.75 0 01.25-.569z"
+        clipRule="evenodd"
+      />
+    </svg>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+export default function MeetingView({ role, onLocalWebcamTrack, recorderRef, guest }: Props) {
   const [state, setState] = useState<MeetingState>('connecting');
 
   // Interviewer reads the candidate's broadcast look-away state (no-op data for
@@ -85,8 +135,9 @@ export default function MeetingView({ role, onLocalWebcamTrack, recorderRef }: P
       {/* Candidate-only: run assistive look-away detection on the local camera. */}
       {role === 'candidate' && localId && <CandidateProctor participantId={localId} />}
 
-      {/* Interviewer-only: record both speakers' audio for the post-hoc transcript. */}
-      {role === 'interviewer' && localId && recorderRef && (
+      {/* Interviewer-only: record both speakers' audio for the post-hoc transcript.
+          Skipped in the no-login demo (no database to store/transcribe to). */}
+      {role === 'interviewer' && localId && recorderRef && !guest && (
         <InterviewAudioRecorder
           recorderRef={recorderRef}
           localId={localId}
@@ -119,34 +170,39 @@ export default function MeetingView({ role, onLocalWebcamTrack, recorderRef }: P
 
       {/* Controls */}
       <div className="flex items-center justify-center gap-2 pt-1">
+        {/* Mic toggle */}
         <button
           onClick={() => toggleMic()}
           title={localMicOn ? 'Mute microphone' : 'Unmute microphone'}
-          className={`flex h-9 w-9 items-center justify-center rounded-full text-sm transition-colors ${
+          className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors ${
             localMicOn
-              ? 'bg-zinc-700 text-white hover:bg-zinc-600'
+              ? 'bg-zinc-700 text-zinc-200 hover:bg-zinc-600'
               : 'bg-rose-600 text-white hover:bg-rose-500'
           }`}
         >
-          {localMicOn ? '🎙️' : '🔇'}
+          {localMicOn ? <IconMicOn /> : <IconMicOff />}
         </button>
+
+        {/* Camera toggle */}
         <button
           onClick={() => toggleWebcam()}
           title={localWebcamOn ? 'Turn camera off' : 'Turn camera on'}
-          className={`flex h-9 w-9 items-center justify-center rounded-full text-sm transition-colors ${
+          className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors ${
             localWebcamOn
-              ? 'bg-zinc-700 text-white hover:bg-zinc-600'
+              ? 'bg-zinc-700 text-zinc-200 hover:bg-zinc-600'
               : 'bg-rose-600 text-white hover:bg-rose-500'
           }`}
         >
-          {localWebcamOn ? '📹' : '🚫'}
+          {localWebcamOn ? <IconCameraOn /> : <IconCameraOff />}
         </button>
+
+        {/* Leave / hang up */}
         <button
           onClick={() => leave()}
           title="Leave the video call"
-          className="flex h-9 items-center justify-center rounded-full bg-rose-600 px-4 text-xs font-medium text-white transition-colors hover:bg-rose-500"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-rose-600 text-white transition-colors hover:bg-rose-500"
         >
-          Leave
+          <IconHangUp />
         </button>
       </div>
     </div>
