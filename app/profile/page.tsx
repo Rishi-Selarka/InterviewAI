@@ -11,6 +11,7 @@ import { listInterviewsForInterviewer } from '@/src/features/interviews/server/i
 import Logo from '@/src/features/brand/Logo';
 import ProfileForm from '@/src/features/auth/ProfileForm';
 import ThemeToggle from '@/src/features/ui/ThemeToggle';
+import SignOutButton from '@/src/features/auth/SignOutButton';
 
 export default async function ProfilePage() {
   const session = await getSessionProfile();
@@ -27,11 +28,12 @@ export default async function ProfilePage() {
       <header className="border-b border-line bg-ink2/70">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-3.5">
           <Logo href="/" markClassName="h-7 w-7" textClassName="text-base" />
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             <ThemeToggle />
+            <SignOutButton className="rounded-xl border border-line2 bg-surface px-3 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface2 hover:text-strong" />
             <Link
               href="/dashboard"
-              className="flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-strong"
+              className="flex items-center gap-1.5 rounded-xl border border-line2 bg-surface px-3 py-1.5 text-sm text-muted transition-colors hover:bg-surface2 hover:text-strong"
             >
             <svg
               viewBox="0 0 16 16"
