@@ -6,8 +6,13 @@ import Logo from '@/src/features/brand/Logo';
 import GuestStart from '@/src/features/landing/GuestStart';
 import Icon, { type IconName } from '@/src/features/ui/Icon';
 import ThemeToggle from '@/src/features/ui/ThemeToggle';
+import { getSessionProfile } from '@/src/features/auth/profile';
 
-export default function Home() {
+export default async function Home() {
+  // Reflect auth state so a logged-in user who lands here (e.g. logo / "Back to
+  // home") sees "Dashboard", not "Log in" — which looked like being logged out.
+  const session = await getSessionProfile();
+
   return (
     <div className="flex flex-1 flex-col">
       {/* Top nav */}
@@ -20,9 +25,15 @@ export default function Home() {
           </nav>
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <Link href="/login" className="btn-primary px-4 py-2">
-              Log in
-            </Link>
+            {session ? (
+              <Link href="/dashboard" className="btn-primary px-4 py-2">
+                Dashboard
+              </Link>
+            ) : (
+              <Link href="/login" className="btn-primary px-4 py-2">
+                Log in
+              </Link>
+            )}
           </div>
         </div>
       </header>

@@ -52,6 +52,23 @@ export default function RoomLayout({ roomId, role, name, interviewId, guest }: P
     storage.set('ended', value);
   }, []);
 
+  // Ending the interview must (1) persist status='ended' + ended_at in the DB so
+  // it stops counting as "active" on the dashboard, and (2) flip the shared flag
+  // so BOTH participants see the wrap-up screen.
+  const endInterview = async () => {
+    try {
+      await fetch('/api/interviews/end', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ interviewId }),
+        keepalive: true,
+      });
+    } catch {
+      /* still end the session locally even if the network call fails */
+    }
+    setEnded(true);
+  };
+
   // Both participants see a clean wrap-up once the interviewer ends the session.
   if (ended) return <SessionEnded role={role} />;
 
@@ -62,7 +79,7 @@ export default function RoomLayout({ roomId, role, name, interviewId, guest }: P
       <TopBar
         roomId={roomId}
         role={role}
-        onEndInterview={isInterviewer ? () => setEnded(true) : undefined}
+        onEndInterview={isInterviewer ? endInterview : undefined}
       />
 
       <main className="flex min-h-0 flex-1 flex-col lg:flex-row">

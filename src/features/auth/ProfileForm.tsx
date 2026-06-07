@@ -3,7 +3,8 @@
 // ProfileForm — lets the authenticated user update their public profile fields.
 // Role is intentionally excluded; it is managed separately by admins.
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/src/features/auth/supabase/client';
 import type { Profile } from '@/src/features/auth/profile';
 
@@ -25,6 +26,60 @@ export default function ProfileForm({ initial, email }: Props) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const router = useRouter();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleAvatarFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setErrorMsg(null);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/avatar', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!res.ok) {
+        setErrorMsg(data.error || 'Upload failed.');
+      } else {
+        setAvatarUrl(data.url);
+        router.refresh(); // update the header avatar
+      }
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : String(err));
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  }
+
+  async function handleDeleteAccount() {
+    if (
+      !window.confirm(
+        'Delete your account permanently? This removes your profile and interviews. This cannot be undone.',
+      )
+    )
+      return;
+    setDeleting(true);
+    try {
+      const res = await fetch('/api/account/delete', { method: 'POST' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setErrorMsg(data.error || 'Could not delete the account.');
+        setDeleting(false);
+        return;
+      }
+      await createClient().auth.signOut();
+      router.push('/');
+      router.refresh();
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : String(err));
+      setDeleting(false);
+    }
+  }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -159,16 +214,42 @@ export default function ProfileForm({ initial, email }: Props) {
       {/* Divider */}
       <hr className="my-5 border-line" />
 
-      {/* Avatar URL */}
-      <Field label="Avatar URL">
-        <input
-          className="input"
-          type="url"
-          value={avatar_url}
-          onChange={(e) => setAvatarUrl(e.target.value)}
-          placeholder="https://example.com/avatar.jpg"
-        />
-      </Field>
+      {/* Profile photo — upload (no raw URL) */}
+      <div>
+        <span className="mb-1.5 block text-xs font-medium text-muted">Profile photo</span>
+        <div className="flex items-center gap-4">
+          {avatar_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={avatar_url}
+              alt="Profile photo"
+              className="h-16 w-16 rounded-full object-cover ring-1 ring-line2"
+            />
+          ) : (
+            <span className="flex h-16 w-16 items-center justify-center rounded-full bg-brand text-xl font-bold text-white">
+              {(full_name || 'U').charAt(0).toUpperCase()}
+            </span>
+          )}
+          <div>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarFile}
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              disabled={uploading}
+              className="btn-ghost px-4 py-2"
+            >
+              {uploading ? 'Uploading…' : 'Upload photo'}
+            </button>
+            <p className="mt-1.5 text-[11px] text-faint">JPG, PNG, GIF or WebP · up to 5 MB.</p>
+          </div>
+        </div>
+      </div>
 
       {/* Read-only email row */}
       {email && (
@@ -214,6 +295,24 @@ export default function ProfileForm({ initial, email }: Props) {
         {errorMsg && (
           <span className="text-sm text-red-400">{errorMsg}</span>
         )}
+      </div>
+
+      {/* Danger zone */}
+      <div className="mt-8 border-t border-line pt-5">
+        <p className="text-xs font-semibold uppercase tracking-wider text-faint">Danger zone</p>
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+          <span className="text-sm text-muted">
+            Permanently delete your account and all your interviews.
+          </span>
+          <button
+            type="button"
+            onClick={handleDeleteAccount}
+            disabled={deleting}
+            className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-sm font-medium text-rose-300 transition-colors hover:bg-rose-500/20 disabled:opacity-60"
+          >
+            {deleting ? 'Deleting…' : 'Delete account'}
+          </button>
+        </div>
       </div>
     </form>
   );

@@ -7,7 +7,7 @@ import {
   getSessionProfile,
   displayName,
 } from '@/src/features/auth/profile';
-import { listInterviewsForInterviewer } from '@/src/features/interviews/server/interviews';
+import { countInterviewsForInterviewer } from '@/src/features/interviews/server/interviews';
 import Logo from '@/src/features/brand/Logo';
 import ProfileForm from '@/src/features/auth/ProfileForm';
 import ThemeToggle from '@/src/features/ui/ThemeToggle';
@@ -18,7 +18,7 @@ export default async function ProfilePage() {
   if (!session) redirect('/login?next=/profile');
 
   const { userId, email, profile } = session;
-  const hosted = (await listInterviewsForInterviewer(userId)).length;
+  const hosted = await countInterviewsForInterviewer(userId);
   const name = displayName(profile, email);
   const initial = name.charAt(0).toUpperCase();
 

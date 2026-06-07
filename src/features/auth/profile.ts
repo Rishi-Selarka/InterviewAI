@@ -3,6 +3,7 @@ import 'server-only';
 // Server-side helpers for the authenticated user + their profile.
 
 import { createClient } from './supabase/server';
+import { createAdminClient } from './supabase/admin';
 
 export type UserRole = 'interviewer' | 'candidate' | 'hr';
 
@@ -81,4 +82,31 @@ export async function getSessionProfile(): Promise<
       };
 
   return { userId: user.id, email, profile };
+}
+
+export interface PublicProfile {
+  id: string;
+  full_name: string;
+  username: string;
+  headline: string;
+  bio: string;
+  linkedin_url: string;
+  github_url: string;
+  website_url: string;
+  avatar_url: string;
+}
+
+/**
+ * Read another user's public profile by id. Uses the admin client because RLS
+ * limits the `profiles` table to "read own" — this lets a candidate view their
+ * interviewer's public profile. Only non-sensitive fields are selected.
+ */
+export async function getPublicProfile(id: string): Promise<PublicProfile | null> {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from('profiles')
+    .select('id, full_name, username, headline, bio, linkedin_url, github_url, website_url, avatar_url')
+    .eq('id', id)
+    .maybeSingle();
+  return (data as PublicProfile) ?? null;
 }

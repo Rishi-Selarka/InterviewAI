@@ -96,6 +96,16 @@ export async function listInterviewsForInterviewer(interviewerId: string): Promi
   return (data as Interview[]) ?? [];
 }
 
+/** Fast count of interviews owned by an interviewer (no row payload). */
+export async function countInterviewsForInterviewer(interviewerId: string): Promise<number> {
+  const admin = createAdminClient();
+  const { count } = await admin
+    .from('interviews')
+    .select('id', { count: 'exact', head: true })
+    .eq('interviewer_id', interviewerId);
+  return count ?? 0;
+}
+
 /**
  * Claim a candidate seat if it's still open. Idempotent for the same user.
  * Returns the CURRENT interview state (never stale): if this user won the seat
