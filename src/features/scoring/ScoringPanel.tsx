@@ -30,7 +30,13 @@ interface Summary {
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 
-export default function ScoringPanel({ interviewId }: { interviewId: string }) {
+export default function ScoringPanel({
+  interviewId,
+  guest,
+}: {
+  interviewId: string;
+  guest?: boolean;
+}) {
   // Default every criterion to 3 (neutral).
   const [scores, setScores] = useState<RubricScores>(() =>
     Object.fromEntries(RUBRIC.map((c) => [c.key, 3])),
@@ -50,6 +56,12 @@ export default function ScoringPanel({ interviewId }: { interviewId: string }) {
     const values = RUBRIC.map((c) => scores[c.key]);
     const average = values.reduce((a, b) => a + b, 0) / values.length;
     setSummary({ scores: { ...scores }, average, notes });
+
+    // No-login demo: there's no database to write to, so just show the summary.
+    if (guest) {
+      setSaveState('idle');
+      return;
+    }
 
     // Persist to the database.
     setSaveState('saving');
@@ -76,7 +88,7 @@ export default function ScoringPanel({ interviewId }: { interviewId: string }) {
   };
 
   return (
-    <div className="flex flex-col gap-3 border-t border-zinc-800 p-3">
+    <div className="flex flex-col gap-3 p-3">
       <div className="flex items-center gap-2">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
           Evaluation
@@ -104,7 +116,7 @@ export default function ScoringPanel({ interviewId }: { interviewId: string }) {
                   onClick={() => setScore(c.key, n)}
                   className={`h-7 flex-1 rounded text-xs font-medium transition-colors ${
                     scores[c.key] === n
-                      ? 'bg-emerald-600 text-white'
+                      ? 'bg-gradient-to-r from-brand2 to-brand text-white'
                       : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
                   }`}
                   aria-label={`${c.label}: ${n}`}
@@ -135,7 +147,7 @@ export default function ScoringPanel({ interviewId }: { interviewId: string }) {
       <button
         onClick={handleSubmit}
         disabled={saveState === 'saving'}
-        className="rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-500 disabled:opacity-60"
+        className="rounded-lg bg-gradient-to-r from-brand2 to-brand px-3 py-2 text-sm font-semibold text-white shadow-lg shadow-brand/20 transition-opacity hover:opacity-90 disabled:opacity-60"
       >
         {saveState === 'saving' ? 'Saving…' : 'Submit Evaluation'}
       </button>
