@@ -11,6 +11,7 @@ import { getSessionProfile } from '@/src/features/auth/profile';
 import {
   getInterviewByRoomId,
   claimCandidate,
+  markActive,
 } from '@/src/features/interviews/server/interviews';
 import RoomClient from '@/src/features/room/RoomClient';
 import Logo from '@/src/features/brand/Logo';
@@ -42,6 +43,7 @@ export default async function RoomPage({
   let role: Role;
   if (interview.interviewer_id === session.userId) {
     role = 'interviewer';
+    await markActive(interview); // first open => status active + started_at
   } else {
     // Not the owner -> try to take the candidate seat (idempotent for the same user).
     const claimed = await claimCandidate(interview, session.userId);
