@@ -17,6 +17,8 @@ interface Props {
   role: Role;
   name: string;
   interviewId: string;
+  /** The interview owner's user id — lets the candidate view the interviewer card. */
+  interviewerId?: string;
   /** No-login demo mode: skip DB-backed persistence (scoring/recording/proctoring stats). */
   guest?: boolean;
 }
@@ -29,7 +31,7 @@ function Loading() {
   );
 }
 
-export default function RoomClient({ roomId, role, name, interviewId, guest }: Props) {
+export default function RoomClient({ roomId, role, name, interviewId, interviewerId, guest }: Props) {
   if (!LIVEBLOCKS_PUBLIC_KEY) {
     return (
       <div className="flex h-[100dvh] items-center justify-center bg-zinc-950 p-6 text-center text-sm text-rose-300">
@@ -58,6 +60,7 @@ export default function RoomClient({ roomId, role, name, interviewId, guest }: P
             role={role}
             name={name}
             interviewId={interviewId}
+            interviewerId={interviewerId}
             guest={guest}
           />
         </ClientSideSuspense>

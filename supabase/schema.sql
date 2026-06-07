@@ -171,6 +171,10 @@ create table if not exists public.interviews (
   ended_at timestamptz
 );
 
+-- Human-friendly interview name (e.g. "Frontend screen — Aman"). Additive.
+alter table public.interviews
+  add column if not exists title text not null default '';
+
 alter table public.interviews enable row level security;
 
 drop policy if exists "interviews: interviewer manages own" on public.interviews;

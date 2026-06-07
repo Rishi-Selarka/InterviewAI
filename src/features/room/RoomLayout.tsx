@@ -16,6 +16,7 @@ import ScoringPanel from '@/src/features/scoring/ScoringPanel';
 import AIEvaluationPanel from '@/src/features/ai/AIEvaluationPanel';
 import IntegrityMonitor from '@/src/features/proctoring/IntegrityMonitor';
 import InterviewerControls from '@/src/features/proctoring/InterviewerControls';
+import InterviewerProfileCard from './InterviewerProfileCard';
 import type { EditorApi } from '@/src/features/editor/editorApi';
 import type { RecorderApi } from '@/src/features/recording/recorderApi';
 import type { Role } from './liveblocks.config';
@@ -36,16 +37,19 @@ interface Props {
   role: Role;
   name: string;
   interviewId: string;
+  /** The interview owner's user id — lets the candidate view the interviewer card. */
+  interviewerId?: string;
   /** No-login demo mode: skip DB persistence; scoring stays on-screen only. */
   guest?: boolean;
 }
 
 type Tab = 'ai' | 'score';
 
-export default function RoomLayout({ roomId, role, name, interviewId, guest }: Props) {
+export default function RoomLayout({ roomId, role, name, interviewId, interviewerId, guest }: Props) {
   const apiRef = useRef<EditorApi | null>(null);
   const recorderRef = useRef<RecorderApi | null>(null);
   const [tab, setTab] = useState<Tab>('ai');
+  const [showInterviewer, setShowInterviewer] = useState(false);
 
   const ended = useStorage((root) => root.ended);
   const setEnded = useMutation(({ storage }, value: boolean) => {
@@ -99,6 +103,32 @@ export default function RoomLayout({ roomId, role, name, interviewId, guest }: P
               interviewer sees the resulting signal on the candidate tile. */}
           <VideoPanel roomId={roomId} role={role} name={name} recorderRef={recorderRef} guest={guest} />
 
+          {/* Candidate can peek at the interviewer's profile (flashcard overlay). */}
+          {!isInterviewer && interviewerId && (
+            <button
+              type="button"
+              onClick={() => setShowInterviewer(true)}
+              className="card flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium text-muted transition-colors hover:border-brand/40 hover:text-strong"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+              View interviewer
+            </button>
+          )}
+
           {isInterviewer && (
             <>
               <IntegrityMonitor />
@@ -128,6 +158,14 @@ export default function RoomLayout({ roomId, role, name, interviewId, guest }: P
           )}
         </aside>
       </main>
+
+      {/* Interviewer flashcard overlay (candidate-triggered). */}
+      {showInterviewer && interviewerId && (
+        <InterviewerProfileCard
+          interviewerId={interviewerId}
+          onClose={() => setShowInterviewer(false)}
+        />
+      )}
     </div>
   );
 }

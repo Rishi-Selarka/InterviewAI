@@ -6,7 +6,7 @@ import { createInterview } from '@/src/features/interviews/server/interviews';
 
 export const runtime = 'nodejs';
 
-export async function POST() {
+export async function POST(request: Request) {
   const session = await getSessionProfile();
   if (!session) {
     return Response.json({ error: 'Not authenticated.' }, { status: 401 });
@@ -14,8 +14,16 @@ export async function POST() {
   // Any authenticated user can host an interview. Role in a room is derived from
   // ownership (creator => interviewer; whoever opens the invite => candidate).
 
+  let title = '';
   try {
-    const interview = await createInterview(session.userId);
+    const body = await request.json();
+    if (typeof body?.title === 'string') title = body.title;
+  } catch {
+    /* no body => untitled */
+  }
+
+  try {
+    const interview = await createInterview(session.userId, title);
     return Response.json({ id: interview.id, roomId: interview.room_id });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

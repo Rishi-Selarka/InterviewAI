@@ -64,7 +64,13 @@ export default async function RoomPage({
     (role === 'interviewer' ? 'Interviewer' : 'Candidate');
 
   return (
-    <RoomClient roomId={roomId} role={role} name={name} interviewId={interview.id} />
+    <RoomClient
+      roomId={roomId}
+      role={role}
+      name={name}
+      interviewId={interview.id}
+      interviewerId={interview.interviewer_id}
+    />
   );
 }
 

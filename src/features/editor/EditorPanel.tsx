@@ -114,6 +114,24 @@ export default function EditorPanel({ role, name, apiRef }: Props) {
     return <div className="flex-1 bg-zinc-950" />;
   }
 
+  // Switching language swaps in that language's boilerplate — BUT only when the
+  // editor still holds the untouched starter (or is empty), so we never clobber
+  // real work the candidate/interviewer has already typed. The swap goes through
+  // the shared Yjs doc (loadCode), so both participants stay in sync; only the
+  // person who flips the dropdown initiates it, which avoids a two-client race.
+  const handleLanguageChange = (next: SupportedLanguage) => {
+    if (next === language) return;
+    const problem = getProblem(activeProblemId);
+    const current = (apiRef.current?.getCode() ?? '').trim();
+    const prevStarter = starterFor(problem, language).trim();
+    const untouched = current === '' || current === prevStarter;
+
+    setLanguage(next);
+    if (untouched) {
+      apiRef.current?.loadCode(starterFor(problem, next));
+    }
+  };
+
   const handleRun = async () => {
     const code = apiRef.current?.getCode() ?? '';
     setLocalRunning(true);
@@ -147,7 +165,7 @@ export default function EditorPanel({ role, name, apiRef }: Props) {
           <div className="relative">
             <select
               value={language}
-              onChange={(e) => setLanguage(e.target.value as SupportedLanguage)}
+              onChange={(e) => handleLanguageChange(e.target.value as SupportedLanguage)}
               className="cursor-pointer appearance-none rounded-lg border border-line bg-surface py-1.5 pl-3 pr-9 text-sm font-medium text-zinc-100 outline-none transition-colors hover:bg-surface2 focus:border-brand"
             >
               {LANGUAGES.map((l) => (

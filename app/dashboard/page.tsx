@@ -9,16 +9,11 @@ import {
   type Interview,
 } from '@/src/features/interviews/server/interviews';
 import NewInterviewButton from '@/src/features/interviews/NewInterviewButton';
+import InterviewList from '@/src/features/interviews/InterviewList';
 import SignOutButton from '@/src/features/auth/SignOutButton';
 import Logo from '@/src/features/brand/Logo';
 import Icon, { type IconName } from '@/src/features/ui/Icon';
 import ThemeToggle from '@/src/features/ui/ThemeToggle';
-
-const STATUS_STYLES: Record<string, string> = {
-  created: 'bg-zinc-500/15 text-fg',
-  active: 'bg-emerald-500/15 text-emerald-300',
-  ended: 'bg-brand/15 text-brandbright',
-};
 
 export default async function DashboardPage() {
   const session = await getSessionProfile();
@@ -147,10 +142,6 @@ function InterviewerDashboard({
   interviews: Interview[];
   name: string;
 }) {
-  const active = interviews.filter((i) => i.status === 'active').length;
-  const ended = interviews.filter((i) => i.status === 'ended').length;
-  const candidates = interviews.filter((i) => i.candidate_id).length;
-
   return (
     <>
       <div className="flex flex-wrap items-end justify-between gap-4">
@@ -161,67 +152,8 @@ function InterviewerDashboard({
         <NewInterviewButton />
       </div>
 
-      <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard icon="briefcase" color="bg-brand/15 text-brandbright" label="Total Interviews" value={interviews.length} />
-        <StatCard icon="live" color="bg-emerald-500/15 text-emerald-300" label="Active Now" value={active} />
-        <StatCard icon="check" color="bg-sky-500/15 text-sky-300" label="Completed" value={ended} />
-        <StatCard icon="user" color="bg-amber-500/15 text-amber-300" label="Candidates Joined" value={candidates} />
-      </div>
-
       <h2 className="mb-3 mt-9 text-lg font-semibold text-strong">Your interviews</h2>
-      {interviews.length === 0 ? (
-        <div className="card border-dashed p-10 text-center">
-          <p className="text-sm text-muted">
-            No interviews yet. Click <strong className="text-fg">New interview</strong> to
-            create one and get a shareable invite link.
-          </p>
-        </div>
-      ) : (
-        <ul className="flex flex-col gap-2.5">
-          {interviews.map((iv) => (
-            <li key={iv.id} className="card card-hover flex items-center justify-between px-4 py-3.5">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2.5">
-                  <span className="font-mono text-sm font-medium text-strong">{iv.room_id}</span>
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[iv.status] ?? ''}`}>
-                    {iv.status}
-                  </span>
-                  {iv.candidate_id && (
-                    <span className="hidden text-xs text-faint sm:inline">candidate joined</span>
-                  )}
-                </div>
-                <span className="text-xs text-faint">{new Date(iv.created_at).toLocaleString()}</span>
-              </div>
-              <div className="flex shrink-0 gap-2">
-                <Link href={`/interviews/${iv.id}`} className="btn-ghost px-3.5 py-1.5">Details</Link>
-                <Link href={`/room/${iv.room_id}`} className="btn-primary px-3.5 py-1.5">Open</Link>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
+      <InterviewList interviews={interviews} />
     </>
-  );
-}
-
-function StatCard({
-  icon,
-  color,
-  label,
-  value,
-}: {
-  icon: IconName;
-  color: string;
-  label: string;
-  value: number;
-}) {
-  return (
-    <div className="card p-4">
-      <span className={`chip ${color}`}>
-        <Icon name={icon} className="h-5 w-5" />
-      </span>
-      <div className="mt-3 text-2xl font-bold text-strong">{value}</div>
-      <div className="text-xs text-muted">{label}</div>
-    </div>
   );
 }

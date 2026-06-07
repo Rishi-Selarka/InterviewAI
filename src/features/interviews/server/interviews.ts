@@ -16,6 +16,7 @@ import {
 export interface Interview {
   id: string;
   room_id: string;
+  title: string;
   interviewer_id: string;
   candidate_id: string | null;
   videosdk_meeting_id: string | null;
@@ -33,7 +34,10 @@ function shortRoomId(): string {
 }
 
 /** Create an interview owned by `interviewerId`, minting a room id + meeting id. */
-export async function createInterview(interviewerId: string): Promise<Interview> {
+export async function createInterview(
+  interviewerId: string,
+  title = '',
+): Promise<Interview> {
   const admin = createAdminClient();
 
   const meetingId = credentialsConfigured() ? await createVideoSdkMeeting() : null;
@@ -45,6 +49,7 @@ export async function createInterview(interviewerId: string): Promise<Interview>
       .from('interviews')
       .insert({
         room_id,
+        title: title.trim().slice(0, 80),
         interviewer_id: interviewerId,
         videosdk_meeting_id: meetingId,
         status: 'created',
