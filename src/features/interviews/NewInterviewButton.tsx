@@ -9,7 +9,10 @@ import { useRouter } from 'next/navigation';
 export default function NewInterviewButton() {
   const router = useRouter();
   const [title, setTitle] = useState('');
-  const [scheduledAt, setScheduledAt] = useState(''); // datetime-local value
+  // Split date + time so the time shows a real default (00:00) instead of the
+  // native "--:-- --" placeholder. An interview is only scheduled if a DATE is set.
+  const [scheduleDate, setScheduleDate] = useState('');
+  const [scheduleTime, setScheduleTime] = useState('00:00');
   const [roomId, setRoomId] = useState<string | null>(null);
   const [createdTitle, setCreatedTitle] = useState<string | null>(null);
   const [createdScheduled, setCreatedScheduled] = useState(false);
@@ -26,8 +29,10 @@ export default function NewInterviewButton() {
     setBusy(true);
     setError(null);
     try {
-      // datetime-local has no timezone; convert to a real ISO instant.
-      const scheduledIso = scheduledAt ? new Date(scheduledAt).toISOString() : undefined;
+      // Only schedule if a date is chosen; combine with the time (defaults 00:00).
+      const scheduledIso = scheduleDate
+        ? new Date(`${scheduleDate}T${scheduleTime || '00:00'}`).toISOString()
+        : undefined;
       const res = await fetch('/api/interviews', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -64,7 +69,8 @@ export default function NewInterviewButton() {
     setCreatedTitle(null);
     setCreatedScheduled(false);
     setTitle('');
-    setScheduledAt('');
+    setScheduleDate('');
+    setScheduleTime('00:00');
   };
 
   const displayName = createdTitle || roomId;
@@ -88,20 +94,28 @@ export default function NewInterviewButton() {
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label htmlFor="interview-schedule" className="text-xs text-muted">
-            Schedule (optional)
-          </label>
-          <input
-            id="interview-schedule"
-            type="datetime-local"
-            value={scheduledAt}
-            onChange={(e) => setScheduledAt(e.target.value)}
-            className="input w-56 text-sm"
-          />
+          <span className="text-xs text-muted">Schedule (optional)</span>
+          <div className="flex gap-2">
+            <input
+              aria-label="Interview date"
+              type="date"
+              value={scheduleDate}
+              onChange={(e) => setScheduleDate(e.target.value)}
+              className="input w-40 text-sm"
+            />
+            <input
+              aria-label="Interview time"
+              type="time"
+              value={scheduleTime}
+              onChange={(e) => setScheduleTime(e.target.value)}
+              disabled={!scheduleDate}
+              className="input w-28 text-sm disabled:opacity-50"
+            />
+          </div>
         </div>
         <div className="flex flex-col gap-1">
           <button onClick={create} disabled={busy} className="btn-primary">
-            {busy ? 'Creating…' : scheduledAt ? '+ Schedule' : '+ New interview'}
+            {busy ? 'Creating…' : scheduleDate ? '+ Schedule' : '+ New interview'}
           </button>
           {error && <p className="text-sm text-rose-300">{error}</p>}
         </div>

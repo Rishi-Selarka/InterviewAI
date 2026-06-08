@@ -56,10 +56,33 @@ export default function ProblemPanel({ role, apiRef }: Props) {
   const showResults = searchQuery.trim().length > 0;
 
   // ── Handlers ─────────────────────────────────────────────────────────────
+  // Selecting a problem auto-loads ITS starter code into the shared editor, in
+  // whatever language is currently selected. If the candidate has real work in
+  // the editor (not just the current problem's untouched starter), we confirm
+  // before replacing it so a stray click can't wipe their progress.
   const handleSelectProblem = (id: string) => {
-    setActiveProblem(id);
+    const next = getProblem(id);
+    const existing = (apiRef.current?.getCode() ?? '').trim();
+    const currentStarter = starterFor(problem, language).trim();
+    const untouched = existing === '' || existing === currentStarter;
+
     setSearchQuery('');
     setGuideOpen(false);
+
+    if (
+      !untouched &&
+      !window.confirm(
+        'Load this problem’s starter code? It replaces the editor for both ' +
+          'participants (their current code will be lost).',
+      )
+    ) {
+      // Keep their code, just switch the problem statement.
+      setActiveProblem(id);
+      return;
+    }
+
+    setActiveProblem(id);
+    apiRef.current?.loadCode(starterFor(next, language));
   };
 
   const handleLoadStarter = () => {
