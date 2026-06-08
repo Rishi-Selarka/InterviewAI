@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type { Interview } from '@/src/features/interviews/server/interviews';
 
@@ -17,7 +18,9 @@ function interviewDisplayName(iv: Interview): string {
 }
 
 export default function InterviewList({ interviews }: { interviews: Interview[] }) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
+  const [closingId, setClosingId] = useState<string | null>(null);
 
   const counts: Record<FilterTab, number> = {
     all: interviews.length,
@@ -36,30 +39,62 @@ export default function InterviewList({ interviews }: { interviews: Interview[] 
     { key: 'created', label: 'Created' },
   ];
 
+  // Close (end) an interview straight from its row — useful if a session is stuck
+  // active/created after an error and should no longer count as open.
+  async function closeInterview(id: string, name: string) {
+    if (!window.confirm(`Close "${name}"? This marks the interview as ended.`)) return;
+    setClosingId(id);
+    try {
+      const res = await fetch('/api/interviews/end', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ interviewId: id }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        window.alert(data.error || 'Could not close the interview.');
+      } else {
+        router.refresh(); // re-fetch the list so status flips to "ended"
+      }
+    } catch {
+      window.alert('Could not reach the server. Please try again.');
+    } finally {
+      setClosingId(null);
+    }
+  }
+
   return (
     <div>
-      {/* Filter tabs */}
-      <div className="mb-4 flex flex-wrap items-center gap-1">
-        {tabs.map(({ key, label }) => (
-          <button
-            key={key}
-            onClick={() => setActiveTab(key)}
-            className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-              activeTab === key
-                ? 'bg-brand/15 text-brandbright'
-                : 'text-muted hover:bg-surface2 hover:text-fg'
-            }`}
-          >
-            {label}
-            <span
-              className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[11px] font-semibold tabular-nums ${
-                activeTab === key ? 'bg-brand/20 text-brandbright' : 'bg-surface text-faint'
+      {/* Filter cards — clickable count cards that filter the list below. */}
+      <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {tabs.map(({ key, label }) => {
+          const selected = activeTab === key;
+          return (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key)}
+              aria-pressed={selected}
+              className={`card card-hover flex flex-col gap-1 p-4 text-left transition-colors ${
+                selected ? 'border-brand bg-brand/10' : ''
               }`}
             >
-              {counts[key]}
-            </span>
-          </button>
-        ))}
+              <span
+                className={`text-xs font-medium uppercase tracking-wide ${
+                  selected ? 'text-brandbright' : 'text-faint'
+                }`}
+              >
+                {label}
+              </span>
+              <span
+                className={`text-2xl font-bold tabular-nums ${
+                  selected ? 'text-brandbright' : 'text-strong'
+                }`}
+              >
+                {counts[key]}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* List */}
@@ -73,41 +108,55 @@ export default function InterviewList({ interviews }: { interviews: Interview[] 
         </div>
       ) : (
         <ul className="flex flex-col gap-2.5">
-          {filtered.map((iv) => (
-            <li
-              key={iv.id}
-              className="card card-hover flex items-center justify-between px-4 py-3.5"
-            >
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="truncate text-sm font-medium text-strong">
-                    {interviewDisplayName(iv)}
-                  </span>
-                  <span
-                    className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[iv.status] ?? ''}`}
-                  >
-                    {iv.status}
-                  </span>
-                  {iv.candidate_id && (
-                    <span className="hidden shrink-0 text-xs text-faint sm:inline">
-                      candidate joined
+          {filtered.map((iv) => {
+            const name = interviewDisplayName(iv);
+            const closing = closingId === iv.id;
+            return (
+              <li
+                key={iv.id}
+                className="card card-hover flex items-center justify-between px-4 py-3.5"
+              >
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="truncate text-sm font-medium text-strong">{name}</span>
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[iv.status] ?? ''}`}
+                    >
+                      {iv.status}
                     </span>
+                    {iv.candidate_id && (
+                      <span className="hidden shrink-0 text-xs text-faint sm:inline">
+                        candidate joined
+                      </span>
+                    )}
+                  </div>
+                  <span className="mt-0.5 block text-xs text-faint">
+                    {new Date(iv.created_at).toLocaleString()}
+                  </span>
+                </div>
+                <div className="ml-4 flex shrink-0 items-center gap-2">
+                  <Link href={`/interviews/${iv.id}`} className="btn-ghost px-3.5 py-1.5 text-sm">
+                    Details
+                  </Link>
+                  {iv.status !== 'ended' && (
+                    <Link href={`/room/${iv.room_id}`} className="btn-primary px-3.5 py-1.5 text-sm">
+                      Open
+                    </Link>
+                  )}
+                  {iv.status !== 'ended' && (
+                    <button
+                      type="button"
+                      onClick={() => closeInterview(iv.id, name)}
+                      disabled={closing}
+                      className="rounded-xl border border-line px-3.5 py-1.5 text-sm font-medium text-muted transition-colors hover:border-rose-500/40 hover:text-rose-300 disabled:opacity-60"
+                    >
+                      {closing ? 'Closing…' : 'Close'}
+                    </button>
                   )}
                 </div>
-                <span className="mt-0.5 block text-xs text-faint">
-                  {new Date(iv.created_at).toLocaleString()}
-                </span>
-              </div>
-              <div className="ml-4 flex shrink-0 gap-2">
-                <Link href={`/interviews/${iv.id}`} className="btn-ghost px-3.5 py-1.5 text-sm">
-                  Details
-                </Link>
-                <Link href={`/room/${iv.room_id}`} className="btn-primary px-3.5 py-1.5 text-sm">
-                  Open
-                </Link>
-              </div>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

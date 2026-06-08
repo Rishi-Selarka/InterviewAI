@@ -1,6 +1,7 @@
 // Landing page. Marketing hero + feature grid, styled to match the product
 // mockups. Visitors sign in to host (interviewer) or join (candidate) a room.
 
+import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import Logo from '@/src/features/brand/Logo';
 import GuestStart from '@/src/features/landing/GuestStart';
@@ -9,9 +10,11 @@ import ThemeToggle from '@/src/features/ui/ThemeToggle';
 import { getSessionProfile } from '@/src/features/auth/profile';
 
 export default async function Home() {
-  // Reflect auth state so a logged-in user who lands here (e.g. logo / "Back to
-  // home") sees "Dashboard", not "Log in" — which looked like being logged out.
+  // The landing page is for first-time / logged-out visitors only. A signed-in
+  // user who hits "/" goes straight to their dashboard — the splash is just the
+  // entry point to authenticate, not a screen they should keep seeing.
   const session = await getSessionProfile();
+  if (session) redirect('/dashboard');
 
   return (
     <div className="flex flex-1 flex-col">
