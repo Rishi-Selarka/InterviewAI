@@ -60,59 +60,87 @@ export default function NewInterviewButton() {
     setTitle('');
   };
 
-  if (roomId) {
-    const displayName = createdTitle || roomId;
-    return (
-      <div className="glass w-full border-brand/40 p-4 sm:max-w-md">
-        <p className="text-sm font-medium text-strong">
-          <span className="text-brandbright">{displayName}</span> created. Share this link with
-          your candidate:
-        </p>
-        <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-          <input
-            readOnly
-            value={inviteLink}
-            onFocus={(e) => e.currentTarget.select()}
-            className="flex-1 rounded-xl border border-white/15 bg-surface/50 px-3 py-2 font-mono text-xs text-fg backdrop-blur-md"
-          />
-          <button onClick={copy} className="btn-ghost px-4 py-2">
-            {copied ? '✓ Copied' : 'Copy'}
-          </button>
-        </div>
-        <div className="mt-3 flex gap-2">
-          <button onClick={() => router.push(`/room/${roomId}`)} className="btn-primary px-4 py-2">
-            Enter room →
-          </button>
-          <button onClick={reset} className="btn-ghost px-4 py-2">
-            New interview
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const displayName = createdTitle || roomId;
 
   return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-      <div className="flex flex-col gap-1">
-        <label htmlFor="interview-title" className="text-xs text-muted">
-          Interview name (optional)
-        </label>
-        <input
-          id="interview-title"
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && !busy && create()}
-          placeholder="e.g. Software Developer"
-          className="w-64 rounded-xl border border-white/15 bg-surface/50 px-3.5 py-2.5 text-sm text-fg placeholder-faint outline-none backdrop-blur-md transition-colors focus:border-brand"
-        />
+    <>
+      {/* Trigger stays put in the header; the result shows as a centered popup. */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+        <div className="flex flex-col gap-1">
+          <label htmlFor="interview-title" className="text-xs text-muted">
+            Interview name (optional)
+          </label>
+          <input
+            id="interview-title"
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && !busy && create()}
+            placeholder="e.g. Software Developer"
+            className="w-64 rounded-xl border border-white/15 bg-surface/50 px-3.5 py-2.5 text-sm text-fg placeholder-faint outline-none backdrop-blur-md transition-colors focus:border-brand"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <button onClick={create} disabled={busy} className="btn-primary">
+            {busy ? 'Creating…' : '+ New interview'}
+          </button>
+          {error && <p className="text-sm text-rose-300">{error}</p>}
+        </div>
       </div>
-      <div className="flex flex-col gap-1">
-        <button onClick={create} disabled={busy} className="btn-primary">
-          {busy ? 'Creating…' : '+ New interview'}
-        </button>
-        {error && <p className="text-sm text-rose-300">{error}</p>}
-      </div>
-    </div>
+
+      {/* Centered popup with the invite link + enter-room CTA. */}
+      {roomId && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          onClick={reset}
+        >
+          <div
+            className="card w-full max-w-md p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <p className="text-base font-semibold text-strong">
+                <span className="text-brandbright">{displayName}</span> created
+              </p>
+              <button
+                onClick={reset}
+                aria-label="Close"
+                className="btn-ghost rounded-md p-1"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+            <p className="mt-1 text-sm text-muted">Share this link with your candidate:</p>
+
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+              <input
+                readOnly
+                value={inviteLink}
+                onFocus={(e) => e.currentTarget.select()}
+                className="flex-1 rounded-xl border border-line bg-ink2 px-3 py-2 font-mono text-xs text-fg"
+              />
+              <button onClick={copy} className="btn-ghost px-4 py-2">
+                {copied ? '✓ Copied' : 'Copy'}
+              </button>
+            </div>
+
+            <div className="mt-4 flex gap-2">
+              <button
+                onClick={() => router.push(`/room/${roomId}`)}
+                className="btn-primary flex-1 px-4 py-2"
+              >
+                Enter room →
+              </button>
+              <button onClick={reset} className="btn-ghost px-4 py-2">
+                New interview
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
