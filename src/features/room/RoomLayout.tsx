@@ -16,6 +16,7 @@ import EditorPanel from '@/src/features/editor/EditorPanel';
 import ScoringPanel from '@/src/features/scoring/ScoringPanel';
 import AIEvaluationPanel from '@/src/features/ai/AIEvaluationPanel';
 import IntegrityMonitor from '@/src/features/proctoring/IntegrityMonitor';
+import ProctoringAlert from '@/src/features/proctoring/ProctoringAlert';
 import InterviewerControls from '@/src/features/proctoring/InterviewerControls';
 import InterviewerProfileCard from './InterviewerProfileCard';
 import { useCandidateProctoring } from '@/src/features/proctoring/useCandidateProctoring';
@@ -145,6 +146,9 @@ export default function RoomLayout({ roomId, role, name, interviewId, interviewe
         onEndInterview={isInterviewer ? endInterview : undefined}
       />
 
+      {/* Loud, can't-miss integrity banner (interviewer only). */}
+      {isInterviewer && <ProctoringAlert />}
+
       <main className="flex min-h-0 flex-1 flex-col lg:flex-row">
         {/* LEFT: problem statement + (interviewer) search & guide */}
         <aside className="h-72 shrink-0 border-b border-line lg:h-auto lg:w-80 lg:border-b-0 lg:border-r">
@@ -157,7 +161,7 @@ export default function RoomLayout({ roomId, role, name, interviewId, interviewe
         </section>
 
         {/* RIGHT: video + (interviewer-only) integrity + evaluation tabs */}
-        <aside className="flex shrink-0 flex-col gap-3 overflow-auto border-t border-line bg-ink2 p-3 lg:w-80 lg:border-l lg:border-t-0">
+        <aside className="flex max-h-[45vh] min-h-0 shrink-0 flex-col gap-3 overflow-y-auto border-t border-line bg-ink2 p-3 lg:max-h-none lg:w-80 lg:border-l lg:border-t-0">
           {/* Candidate-side look-away proctoring runs inside VideoPanel; the
               interviewer sees the resulting signal on the candidate tile. */}
           <VideoPanel roomId={roomId} role={role} name={name} recorderRef={recorderRef} guest={guest} />

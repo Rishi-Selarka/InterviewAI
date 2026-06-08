@@ -5,7 +5,7 @@
 // MeetingProvider) and tracks join/leave so we can show "Connecting…" and a
 // rejoin affordance.
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMeeting } from '@videosdk.live/react-sdk';
 import ParticipantTile from './ParticipantTile';
@@ -109,6 +109,17 @@ export default function MeetingView({ role, onLocalWebcamTrack, recorderRef, gue
     : allIds;
   const remoteCount = orderedIds.filter((id) => id !== localId).length;
 
+  // Track whether the other participant has EVER joined, so we can show a clear
+  // "left the call" message (vs. "waiting to join") when they disconnect.
+  const [otherEverJoined, setOtherEverJoined] = useState(false);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (remoteCount > 0 && !otherEverJoined) setOtherEverJoined(true);
+  }, [remoteCount, otherEverJoined]);
+  const otherLeft = otherEverJoined && remoteCount === 0;
+  // From each side, the "other" participant is the opposite role.
+  const otherLabel = role === 'interviewer' ? 'candidate' : 'interviewer';
+
   if (state === 'left') {
     const rejoin = () => {
       setState('connecting');
@@ -191,9 +202,22 @@ export default function MeetingView({ role, onLocalWebcamTrack, recorderRef, gue
           );
         })}
         {state === 'joined' && remoteCount === 0 && (
-          <p className="px-1 text-center text-xs text-zinc-500">
-            Waiting for the other participant to join the call…
-          </p>
+          <div
+            className={`flex items-center justify-center gap-2 rounded-md border px-3 py-2.5 text-center text-xs font-medium ${
+              otherLeft
+                ? 'border-rose-500/40 bg-rose-500/10 text-rose-200'
+                : 'border-zinc-700 bg-zinc-900 text-zinc-400'
+            }`}
+          >
+            {otherLeft ? (
+              <>
+                <span className="h-2 w-2 rounded-full bg-rose-400" />
+                The {otherLabel} left the call.
+              </>
+            ) : (
+              <>Waiting for the {otherLabel} to join the call…</>
+            )}
+          </div>
         )}
       </div>
 

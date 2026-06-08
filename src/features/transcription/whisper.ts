@@ -25,7 +25,14 @@ async function getTranscriber(onStatus?: StatusFn): Promise<
     onStatus?.('Loading the speech model (first run downloads ~tens of MB)…');
     transcriberPromise = (async () => {
       const { pipeline } = await import('@huggingface/transformers');
-      return pipeline('automatic-speech-recognition', MODEL_ID);
+      // Force a reliable quantization + backend. By default @huggingface/transformers
+      // 4.x picks a 4-bit (MatMulNBits / q4) decoder variant on wasm, which is broken
+      // for this model ("Missing required scale ... _merged_0_scale"). q8 = 8-bit
+      // avoids that NBits path, and wasm is the safe universal backend.
+      return pipeline('automatic-speech-recognition', MODEL_ID, {
+        dtype: 'q8',
+        device: 'wasm',
+      });
     })();
     // If loading fails, clear the cached (rejected) promise so a later attempt
     // can retry instead of being stuck with the same failure forever.

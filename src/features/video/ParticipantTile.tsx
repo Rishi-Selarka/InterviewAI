@@ -87,7 +87,15 @@ export default function ParticipantTile({
     }
   }, [micStream, micOn, isLocal]);
 
-  const awayActive = !!lookAway?.lookingAway;
+  // Border reflects anomaly severity: red for serious (tab switch / extra face),
+  // amber for soft signals (no face / looking away), normal otherwise.
+  const severe = !!(lookAway && (lookAway.tabHidden || lookAway.multipleFaces));
+  const warn = !!(lookAway && (lookAway.noFace || lookAway.lookingAway));
+  const borderCls = severe
+    ? 'border-rose-500 ring-2 ring-rose-500/40'
+    : warn
+      ? 'border-amber-500'
+      : 'border-zinc-700';
 
   // Severity-ordered badges for the interviewer.
   const badges: { label: string; color: 'red' | 'amber' }[] = [];
@@ -106,9 +114,7 @@ export default function ParticipantTile({
   return (
     <>
       <div
-        className={`relative aspect-video w-full overflow-hidden rounded-lg border-2 bg-zinc-800 transition-colors ${
-          awayActive ? 'border-amber-500' : 'border-zinc-700'
-        }`}
+        className={`relative aspect-video w-full overflow-hidden rounded-lg border-2 bg-zinc-800 transition-colors ${borderCls}`}
       >
         {webcamOn ? (
           <video

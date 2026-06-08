@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/src/features/auth/supabase/server';
 import { signRecording } from '@/src/features/recording/server/storage';
+import AudioPlayer from '@/src/features/recording/AudioPlayer';
 import TranscriptView from '@/src/features/transcription/TranscriptView';
 import type { TranscriptSegment } from '@/src/features/transcription/types';
 
@@ -220,7 +221,7 @@ export default async function InterviewDetailPage({
                   <p className="mb-2 text-xs font-medium uppercase tracking-wide text-faint">
                     Interviewer
                   </p>
-                  <audio controls src={interviewerUrl} className="w-full" />
+                  <AudioPlayer src={interviewerUrl} />
                 </div>
               )}
               {candidateUrl && (
@@ -228,7 +229,7 @@ export default async function InterviewDetailPage({
                   <p className="mb-2 text-xs font-medium uppercase tracking-wide text-faint">
                     Candidate
                   </p>
-                  <audio controls src={candidateUrl} className="w-full" />
+                  <AudioPlayer src={candidateUrl} />
                 </div>
               )}
             </div>

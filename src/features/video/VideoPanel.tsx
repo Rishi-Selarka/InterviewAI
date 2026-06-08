@@ -85,7 +85,9 @@ export default function VideoPanel({ roomId, role, name, onLocalWebcamTrack, rec
       config={{
         meetingId: state.meetingId,
         name,
-        micEnabled: true,
+        // Join MUTED by default — avoids broadcasting background/fan noise until
+        // the participant actively unmutes. Camera stays on.
+        micEnabled: false,
         webcamEnabled: true,
         debugMode: false,
       }}

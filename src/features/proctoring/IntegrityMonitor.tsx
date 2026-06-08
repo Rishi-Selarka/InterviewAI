@@ -1,12 +1,14 @@
 'use client';
 
-// Interviewer-only compact live "integrity" readout, driven by the candidate's
-// broadcast proctoring state. Non-punitive: it's a signal, never a verdict.
+// Interviewer-only persistent "integrity" readout, driven by the candidate's
+// broadcast proctoring state. Non-punitive: a signal, never a verdict. The loud
+// real-time alerting lives in ProctoringAlert; this is the always-visible summary
+// with running counts.
 
-import { useCandidateProctoring } from './useCandidateProctoring';
+import { useCandidateStatus } from './useCandidateProctoring';
 
 export default function IntegrityMonitor() {
-  const p = useCandidateProctoring();
+  const { connected, proctoring: p } = useCandidateStatus();
 
   const flags = [
     p.tabHidden && { label: 'Switched tab / window', tone: 'rose' as const },
@@ -15,7 +17,14 @@ export default function IntegrityMonitor() {
     p.lookingAway && { label: 'Looking away', tone: 'amber' as const },
   ].filter(Boolean) as { label: string; tone: 'rose' | 'amber' }[];
 
-  const clean = flags.length === 0;
+  const clean = connected && flags.length === 0;
+
+  // Status pill: not-connected (grey) vs focused (green) vs anomaly (red).
+  const status = !connected
+    ? { text: 'Not connected', cls: 'bg-zinc-500/15 text-zinc-300', dot: 'bg-zinc-400' }
+    : clean
+      ? { text: 'Focused', cls: 'bg-emerald-500/15 text-emerald-300', dot: 'bg-emerald-400' }
+      : { text: 'Anomaly', cls: 'bg-rose-500/15 text-rose-300', dot: 'bg-rose-400' };
 
   return (
     <div className="card p-3">
@@ -24,16 +33,20 @@ export default function IntegrityMonitor() {
           Integrity monitor
         </h3>
         <span
-          className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium ${
-            clean ? 'bg-emerald-500/15 text-emerald-300' : 'bg-rose-500/15 text-rose-300'
-          }`}
+          className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium ${status.cls}`}
         >
-          <span className={`h-1.5 w-1.5 rounded-full ${clean ? 'bg-emerald-400' : 'bg-rose-400'}`} />
-          {clean ? 'Focused' : 'Anomaly'}
+          <span className={`h-1.5 w-1.5 rounded-full ${status.dot}`} />
+          {status.text}
         </span>
       </div>
 
-      {flags.length > 0 && (
+      {!connected && (
+        <p className="mb-2 text-xs text-zinc-400">
+          Candidate isn’t connected. Signals resume when they (re)join.
+        </p>
+      )}
+
+      {connected && flags.length > 0 && (
         <ul className="mb-2 space-y-1">
           {flags.map((f) => (
             <li
