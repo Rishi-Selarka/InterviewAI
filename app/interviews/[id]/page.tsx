@@ -181,13 +181,16 @@ export default async function InterviewDetailPage({
             </span>
           </div>
 
-          {/* Right: open room CTA */}
-          <Link
-            href={`/room/${interview.room_id}`}
-            className="btn-primary shrink-0 whitespace-nowrap text-sm"
-          >
-            Open Room →
-          </Link>
+          {/* Right: open room CTA — only while the interview is still joinable.
+              An ended room can't be reopened, so showing it there is misleading. */}
+          {interview.status !== 'ended' && (
+            <Link
+              href={`/room/${interview.room_id}`}
+              className="btn-primary shrink-0 whitespace-nowrap text-sm"
+            >
+              Open Room →
+            </Link>
+          )}
         </div>
       </header>
 

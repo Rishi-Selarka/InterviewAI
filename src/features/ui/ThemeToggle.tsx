@@ -20,6 +20,10 @@ export default function ThemeToggle({ className = '' }: { className?: string }) 
     setTheme(next);
     document.documentElement.setAttribute('data-theme', next);
     try {
+      // Cookie is the source of truth the SERVER reads on every render, so the
+      // choice survives full reloads / OAuth redirects. localStorage is kept for
+      // the legacy migration path in app/layout.tsx.
+      document.cookie = `intelli_theme=${next}; path=/; max-age=31536000; samesite=lax`;
       localStorage.setItem('intelli_theme', next);
     } catch {
       /* ignore */

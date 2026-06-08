@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import Editor from '@monaco-editor/react';
 import '@/src/features/editor/setupMonaco'; // self-host Monaco (no CDN)
 import Logo from '@/src/features/brand/Logo';
@@ -93,6 +94,8 @@ export default function CodingPad() {
         <div className="flex items-center gap-3">
           <Logo href="/" textClassName="text-base" markClassName="h-7 w-7" />
           <span className="rounded-md bg-surface px-2 py-0.5 text-xs text-muted">Coding Pad</span>
+          <Link href="/" className="btn-ghost px-3 py-1.5 text-sm">← Home</Link>
+          <Link href="/dashboard" className="btn-ghost px-3 py-1.5 text-sm">Dashboard</Link>
         </div>
 
         <div className="flex items-center gap-3">

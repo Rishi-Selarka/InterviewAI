@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -17,23 +18,32 @@ export const metadata: Metadata = {
   description: "Live technical interviews with a smart coding room.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Read the theme from a cookie SERVER-SIDE so React owns the data-theme
+  // attribute. This is what makes the choice survive full reloads and OAuth
+  // redirects (the previous localStorage-only approach could revert to dark).
+  const cookieTheme = (await cookies()).get('intelli_theme')?.value;
+  const theme = cookieTheme === 'light' ? 'light' : 'dark';
+
   return (
     <html
       lang="en"
+      data-theme={theme}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
-        {/* Apply the saved theme before paint (no flash). Defaults to dark. */}
+        {/* Legacy migration: if there's no theme cookie yet but an older
+            localStorage preference exists, honour it and write the cookie so the
+            server agrees on the next render. Runs before paint, so no flash. */}
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "try{var t=localStorage.getItem('intelli_theme')||'dark';document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}",
+              "try{if(!/(?:^|; )intelli_theme=/.test(document.cookie)){var ls=localStorage.getItem('intelli_theme');if(ls==='light'||ls==='dark'){document.documentElement.setAttribute('data-theme',ls);document.cookie='intelli_theme='+ls+'; path=/; max-age=31536000; samesite=lax';}}}catch(e){}",
           }}
         />
         {children}

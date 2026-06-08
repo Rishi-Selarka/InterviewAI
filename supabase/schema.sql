@@ -27,6 +27,7 @@ alter table public.profiles
   add column if not exists username text not null default '',
   add column if not exists headline text not null default '',
   add column if not exists bio text not null default '',
+  add column if not exists work_experience text not null default '',
   add column if not exists linkedin_url text not null default '',
   add column if not exists github_url text not null default '',
   add column if not exists website_url text not null default '',

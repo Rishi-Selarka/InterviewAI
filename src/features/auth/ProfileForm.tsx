@@ -18,6 +18,7 @@ export default function ProfileForm({ initial, email }: Props) {
   const [username, setUsername] = useState(initial.username ?? '');
   const [headline, setHeadline] = useState(initial.headline ?? '');
   const [bio, setBio] = useState(initial.bio ?? '');
+  const [work_experience, setWorkExperience] = useState(initial.work_experience ?? '');
   const [linkedin_url, setLinkedinUrl] = useState(initial.linkedin_url ?? '');
   const [github_url, setGithubUrl] = useState(initial.github_url ?? '');
   const [website_url, setWebsiteUrl] = useState(initial.website_url ?? '');
@@ -95,6 +96,7 @@ export default function ProfileForm({ initial, email }: Props) {
         username,
         headline,
         bio,
+        work_experience,
         linkedin_url,
         github_url,
         website_url,
@@ -166,6 +168,19 @@ export default function ProfileForm({ initial, email }: Props) {
             value={bio}
             onChange={(e) => setBio(e.target.value)}
             placeholder="A few lines about yourself…"
+            rows={3}
+          />
+        </Field>
+      </div>
+
+      {/* Work experience */}
+      <div className="mt-4">
+        <Field label="Work experience">
+          <textarea
+            className="input min-h-[96px] resize-y"
+            value={work_experience}
+            onChange={(e) => setWorkExperience(e.target.value)}
+            placeholder="e.g. Senior Engineer at Acme (2021–present) · SWE at Globex (2018–2021)"
             rows={3}
           />
         </Field>

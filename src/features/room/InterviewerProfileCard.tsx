@@ -8,6 +8,7 @@ interface InterviewerProfile {
   username: string;
   headline: string;
   bio: string;
+  work_experience: string;
   linkedin_url: string;
   github_url: string;
   website_url: string;
@@ -151,6 +152,18 @@ export default function InterviewerProfileCard({
               <p className="text-sm text-muted text-center leading-relaxed border-t border-line pt-3 w-full">
                 {profile.bio}
               </p>
+            )}
+
+            {/* Work experience */}
+            {profile.work_experience && (
+              <div className="w-full border-t border-line pt-3 text-left">
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-faint">
+                  Work experience
+                </p>
+                <p className="whitespace-pre-line text-sm leading-relaxed text-fg">
+                  {profile.work_experience}
+                </p>
+              </div>
             )}
 
             {/* Links */}

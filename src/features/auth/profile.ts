@@ -14,6 +14,7 @@ export interface Profile {
   role: UserRole;
   headline: string;
   bio: string;
+  work_experience: string;
   linkedin_url: string;
   github_url: string;
   website_url: string;
@@ -21,7 +22,7 @@ export interface Profile {
 }
 
 const PROFILE_COLUMNS =
-  'id, full_name, username, role, headline, bio, linkedin_url, github_url, website_url, avatar_url';
+  'id, full_name, username, role, headline, bio, work_experience, linkedin_url, github_url, website_url, avatar_url';
 
 /** A human display name, derived even if the profile is sparse. */
 export function displayName(
@@ -72,6 +73,7 @@ export async function getSessionProfile(): Promise<
         role: 'candidate',
         headline: '',
         bio: '',
+        work_experience: '',
         linkedin_url: '',
         github_url: '',
         website_url: '',
@@ -90,6 +92,7 @@ export interface PublicProfile {
   username: string;
   headline: string;
   bio: string;
+  work_experience: string;
   linkedin_url: string;
   github_url: string;
   website_url: string;
@@ -105,7 +108,7 @@ export async function getPublicProfile(id: string): Promise<PublicProfile | null
   const admin = createAdminClient();
   const { data } = await admin
     .from('profiles')
-    .select('id, full_name, username, headline, bio, linkedin_url, github_url, website_url, avatar_url')
+    .select('id, full_name, username, headline, bio, work_experience, linkedin_url, github_url, website_url, avatar_url')
     .eq('id', id)
     .maybeSingle();
   return (data as PublicProfile) ?? null;
