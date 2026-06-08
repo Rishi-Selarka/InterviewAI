@@ -28,18 +28,15 @@ export default async function DashboardPage() {
       <Sidebar name={name} avatarUrl={profile.avatar_url} />
 
       <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
-        {/* Brand image behind the content (everything except the sidebar). A soft
-            top-weighted gradient keeps the heading readable while letting the photo
-            show through; the cards on top use a translucent glass effect. */}
+        {/* Brand illustration behind the content (everything except the sidebar).
+            A light, subtle tint keeps the cards/text legible while letting the
+            illustration show through; the cards on top use a translucent glass. */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 bg-cover bg-center opacity-70"
+          className="pointer-events-none absolute inset-0 bg-cover bg-center opacity-90"
           style={{ backgroundImage: 'url(/interviewai.jpeg)' }}
         />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 bg-gradient-to-b from-ink/80 via-ink/45 to-ink/30"
-        />
+        <div aria-hidden className="pointer-events-none absolute inset-0 bg-ink/25" />
 
         {/* Mobile top bar */}
         <header className="relative z-10 flex items-center justify-between border-b border-line px-5 py-3 lg:hidden">
