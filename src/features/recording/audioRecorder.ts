@@ -6,6 +6,9 @@
 // the MediaRecorder keeps producing ONE continuous file (silence during mutes),
 // which avoids stitching multiple incompatible WebM blobs together.
 
+// User-gesture events that are allowed to resume a suspended AudioContext.
+const GESTURE_EVENTS = ['pointerdown', 'keydown', 'click', 'touchstart'] as const;
+
 function pickMimeType(): string {
   const candidates = [
     'audio/webm;codecs=opus',
@@ -53,15 +56,27 @@ export class AudioRoleRecorder {
     this.started = true;
 
     // The AudioContext may start suspended under the autoplay policy. Resume now,
-    // and also on the next user gesture in case the immediate resume is blocked,
-    // so the destination actually produces audio.
+    // and on ANY subsequent user gesture until it's actually running, so the
+    // destination reliably produces audio (otherwise the recording is empty/null).
     this.resume();
-    this.gestureResume = () => this.resume();
-    window.addEventListener('pointerdown', this.gestureResume, { once: true });
-    window.addEventListener('keydown', this.gestureResume, { once: true });
+    this.gestureResume = () => {
+      this.resume();
+      if (this.ctx && this.ctx.state === 'running') this.removeGestureListeners();
+    };
+    for (const ev of GESTURE_EVENTS) {
+      window.addEventListener(ev, this.gestureResume);
+    }
   }
 
   private gestureResume: (() => void) | null = null;
+
+  private removeGestureListeners(): void {
+    if (!this.gestureResume) return;
+    for (const ev of GESTURE_EVENTS) {
+      window.removeEventListener(ev, this.gestureResume);
+    }
+    this.gestureResume = null;
+  }
 
   private resume(): void {
     if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
@@ -92,13 +107,16 @@ export class AudioRoleRecorder {
   /** Stop recording and return the full blob (or null if nothing captured). */
   async stop(): Promise<Blob | null> {
     if (!this.recorder || !this.started) return null;
-    if (this.gestureResume) {
-      window.removeEventListener('pointerdown', this.gestureResume);
-      window.removeEventListener('keydown', this.gestureResume);
-      this.gestureResume = null;
-    }
+    this.removeGestureListeners();
     const rec = this.recorder;
     if (rec.state !== 'inactive') {
+      // Make sure any buffered audio is flushed into a final chunk before stopping.
+      this.resume();
+      try {
+        rec.requestData();
+      } catch {
+        /* not all browsers support requestData mid-stream */
+      }
       await new Promise<void>((resolve) => {
         rec.onstop = () => resolve();
         try {

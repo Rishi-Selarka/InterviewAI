@@ -129,16 +129,25 @@ export default function RoomLayout({ roomId, role, name, interviewId, interviewe
       return;
     }
 
-    // --- Transcription is BEST-EFFORT. It runs an in-browser model that can fail
-    // on some machines; its failure must NOT surface as a scary error, because
-    // the audio is already saved and transcription can be re-run from the report.
-    if (!guest && (blobs.interviewer || blobs.candidate)) {
+    // Be HONEST about what was captured. If no audio came through (mics stayed
+    // muted — mic is off by default), don't claim a recording/transcript exists.
+    const hasAudio = !!(blobs.interviewer || blobs.candidate);
+    if (!hasAudio) {
+      setWrapWarn(
+        'No audio was captured — the mics stayed muted (the mic is OFF by default). ' +
+          'Unmute during the interview to record audio for the transcript.',
+      );
+    } else if (!guest) {
+      // Transcription is BEST-EFFORT: it runs an in-browser model that can fail on
+      // some machines; its failure must NOT surface as a scary error, because the
+      // audio is already saved and transcription can be re-run from the report.
       try {
         setWrapStatus('Transcribing — this can take a few minutes…');
         await transcribeAndStore(interviewId, blobs, setWrapStatus);
       } catch {
         setWrapWarn(
-          'The transcript couldn’t be generated in this browser, but the audio is saved — you can re-run transcription from the report.',
+          'The audio is saved, but the transcript couldn’t be generated in this ' +
+            'browser — you can re-run transcription from the report.',
         );
       }
     }
@@ -289,17 +298,17 @@ function WrapUpOverlay({
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-brand/15 text-2xl">
               ✓
             </div>
-            <h2 className="text-lg font-bold text-white">Interview saved</h2>
-            <p className="mt-2 text-sm text-muted">
-              {warn
-                ? 'The recording is saved. View the report or head back.'
-                : 'The recording and transcript are stored. View the report or head back.'}
-            </p>
-            {warn && (
+            <h2 className="text-lg font-bold text-white">Interview ended</h2>
+            {warn ? (
               <p className="mt-3 rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-300">
                 {warn}
               </p>
+            ) : (
+              <p className="mt-2 text-sm text-muted">
+                The recording and transcript are saved.
+              </p>
             )}
+            <p className="mt-3 text-sm text-muted">View the report or head back.</p>
             <div className="mt-6 flex flex-col justify-center gap-2 sm:flex-row">
               <Link href={`/interviews/${interviewId}`} className="btn-primary">
                 View report

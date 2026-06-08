@@ -258,6 +258,17 @@ export default function MeetingView({ role, onLocalWebcamTrack, recorderRef, gue
           <IconHangUp />
         </button>
       </div>
+
+      {/* Muted reminder — audio is only recorded/transcribed while unmuted. */}
+      {state === 'joined' && !localMicOn && (
+        <button
+          onClick={() => toggleMic()}
+          className="mx-auto flex items-center gap-1.5 rounded-full bg-amber-500/15 px-3 py-1 text-[11px] font-medium text-amber-300 transition-colors hover:bg-amber-500/25"
+        >
+          <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+          You’re muted — tap to unmute (needed to record)
+        </button>
+      )}
     </div>
   );
 }
