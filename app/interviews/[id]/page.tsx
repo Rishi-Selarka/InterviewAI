@@ -28,6 +28,7 @@ type StatusKind = 'created' | 'active' | 'ended' | string;
 function StatusPill({ status }: { status: StatusKind }) {
   const map: Record<string, string> = {
     created: 'bg-zinc-700 text-zinc-300',
+    scheduled: 'bg-sky-900/60 text-sky-300',
     active: 'bg-emerald-900/60 text-emerald-300',
     ended: 'bg-brand/20 text-brandbright',
   };
