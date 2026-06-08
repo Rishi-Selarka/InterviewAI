@@ -53,7 +53,7 @@ function LoginForm() {
       }
     } else if (!data.session) {
       // Email confirmation is enabled on this project.
-      setNotice(`Account created. Check ${email} to confirm, then log in.`);
+      setNotice(`Account created. Check ${email} to confirm, then sign in.`);
       setBusy(false);
       return;
     }
@@ -73,7 +73,7 @@ function LoginForm() {
         </div>
         <div className="card p-7 shadow-2xl shadow-black/40">
           <h1 className="text-2xl font-bold tracking-tight text-strong">Welcome</h1>
-          <p className="mb-6 mt-1 text-sm text-muted">Log in to IntelliInterview.</p>
+          <p className="mb-6 mt-1 text-sm text-muted">Sign in to IntelliInterview.</p>
 
           <GoogleButton next={next} />
 

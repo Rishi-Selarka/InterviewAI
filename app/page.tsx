@@ -34,7 +34,7 @@ export default async function Home() {
               </Link>
             ) : (
               <Link href="/login" className="btn-primary px-4 py-2">
-                Log in
+                Sign in
               </Link>
             )}
           </div>

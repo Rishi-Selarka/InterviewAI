@@ -28,9 +28,8 @@ export default function TopBar({ roomId, onEndInterview }: Props) {
     setTimeout(() => setCopied(false), 1500);
   };
 
-  const onEnd = () => {
-    if (window.confirm('End the interview for everyone?')) onEndInterview?.();
-  };
+  // The handler (RoomLayout) owns the confirm + save/transcribe flow.
+  const onEnd = () => onEndInterview?.();
 
   return (
     <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line bg-ink2 px-4 py-2.5">

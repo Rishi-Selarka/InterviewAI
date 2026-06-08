@@ -7,7 +7,8 @@ export default function SignOutButton({ className }: { className?: string }) {
   const router = useRouter();
   const handle = async () => {
     await createClient().auth.signOut();
-    router.push('/login');
+    // Back to the splash/landing (not the sign-in form) after signing out.
+    router.push('/');
     router.refresh();
   };
   return (
