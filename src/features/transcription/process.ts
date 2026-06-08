@@ -8,6 +8,28 @@ import { mergeSegments, toFullText } from './mergeTranscript';
 
 type StatusFn = (message: string) => void;
 
+/**
+ * Ask the server to transcribe the interview's stored audio via a cloud Whisper
+ * endpoint (reliable, no tab-open needed). Returns:
+ *   'ok'          — transcript generated + stored server-side
+ *   'unavailable' — no server transcriber configured; caller should fall back to
+ *                   the in-browser model.
+ * Throws on a real server error.
+ */
+export async function tryServerTranscribe(
+  interviewId: string,
+): Promise<'ok' | 'unavailable'> {
+  const res = await fetch('/api/transcribe', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ interviewId }),
+  });
+  if (res.ok) return 'ok';
+  if (res.status === 501) return 'unavailable';
+  const data = await res.json().catch(() => ({}));
+  throw new Error(data.error || `Server transcription failed (${res.status}).`);
+}
+
 /** Upload both audio blobs to the server (which stores them via the service role). */
 export async function uploadRecordings(
   interviewId: string,

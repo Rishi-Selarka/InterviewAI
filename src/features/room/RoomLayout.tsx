@@ -20,7 +20,7 @@ import ProctoringAlert from '@/src/features/proctoring/ProctoringAlert';
 import InterviewerControls from '@/src/features/proctoring/InterviewerControls';
 import InterviewerProfileCard from './InterviewerProfileCard';
 import { useCandidateProctoring } from '@/src/features/proctoring/useCandidateProctoring';
-import { uploadRecordings, transcribeAndStore } from '@/src/features/transcription/process';
+import { uploadRecordings, transcribeAndStore, tryServerTranscribe } from '@/src/features/transcription/process';
 import type { EditorApi } from '@/src/features/editor/editorApi';
 import type { RecorderApi } from '@/src/features/recording/recorderApi';
 import type { Role } from './liveblocks.config';
@@ -139,16 +139,20 @@ export default function RoomLayout({ roomId, role, name, interviewId, interviewe
           'Unmute during the interview to record audio for the transcript.',
       );
     } else if (!guest) {
-      // Transcription is BEST-EFFORT: it runs an in-browser model that can fail on
-      // some machines; its failure must NOT surface as a scary error, because the
-      // audio is already saved and transcription can be re-run from the report.
+      // Transcription is BEST-EFFORT. Prefer the SERVER transcriber (reliable,
+      // fast); fall back to the in-browser model if none is configured. A failure
+      // must NOT show a scary error — the audio is saved and it can be re-run.
       try {
-        setWrapStatus('Transcribing — this can take a few minutes…');
-        await transcribeAndStore(interviewId, blobs, setWrapStatus);
+        setWrapStatus('Transcribing…');
+        const result = await tryServerTranscribe(interviewId);
+        if (result === 'unavailable') {
+          setWrapStatus('Transcribing in your browser — keep this tab open…');
+          await transcribeAndStore(interviewId, blobs, setWrapStatus);
+        }
       } catch {
         setWrapWarn(
-          'The audio is saved, but the transcript couldn’t be generated in this ' +
-            'browser — you can re-run transcription from the report.',
+          'The audio is saved, but the transcript couldn’t be generated — you can ' +
+            're-run transcription from the report.',
         );
       }
     }

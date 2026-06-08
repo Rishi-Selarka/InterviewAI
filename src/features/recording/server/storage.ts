@@ -41,6 +41,17 @@ export async function uploadRecording(
   return path;
 }
 
+/** Download a stored recording's raw bytes (for server-side transcription). */
+export async function downloadRecording(
+  path: string | null,
+): Promise<{ bytes: ArrayBuffer; mime: string } | null> {
+  if (!path) return null;
+  const admin = createAdminClient();
+  const { data, error } = await admin.storage.from(RECORDINGS_BUCKET).download(path);
+  if (error || !data) return null;
+  return { bytes: await data.arrayBuffer(), mime: data.type || 'audio/webm' };
+}
+
 /** Create a short-lived signed URL for a stored recording path. */
 export async function signRecording(
   path: string | null,

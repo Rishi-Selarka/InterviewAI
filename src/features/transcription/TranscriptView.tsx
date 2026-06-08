@@ -7,7 +7,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { TranscriptSegment } from './types';
-import { transcribeAndStore } from './process';
+import { transcribeAndStore, tryServerTranscribe } from './process';
 
 interface Props {
   interviewId: string;
@@ -41,11 +41,17 @@ export default function TranscriptView({
     setPhase('running');
     setError(null);
     try {
-      await transcribeAndStore(
-        interviewId,
-        { interviewer: audio.interviewer, candidate: audio.candidate },
-        setStatus,
-      );
+      // Prefer the reliable server transcriber; fall back to the in-browser model.
+      setStatus('Transcribing…');
+      const result = await tryServerTranscribe(interviewId);
+      if (result === 'unavailable') {
+        setStatus('Transcribing in your browser, this may take a few minutes…');
+        await transcribeAndStore(
+          interviewId,
+          { interviewer: audio.interviewer, candidate: audio.candidate },
+          setStatus,
+        );
+      }
       router.refresh();
       setPhase('idle');
     } catch (e) {
