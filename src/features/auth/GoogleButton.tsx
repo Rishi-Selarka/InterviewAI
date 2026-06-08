@@ -43,7 +43,7 @@ export default function GoogleButton({
       type="button"
       onClick={handle}
       disabled={busy}
-      className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-line bg-surface px-3 py-2.5 text-sm font-semibold text-zinc-100 transition-colors hover:bg-surface2 disabled:opacity-60"
+      className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-line bg-surface px-3 py-2.5 text-sm font-semibold text-strong transition-colors hover:bg-surface2 disabled:opacity-60"
     >
       <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
         <path
