@@ -6,7 +6,7 @@
 // dynamic() import in RoomLayout.
 
 import { useEffect, useState } from 'react';
-import { MeetingProvider } from '@videosdk.live/react-sdk';
+import { MeetingProvider, createMicrophoneAudioTrack } from '@videosdk.live/react-sdk';
 import MeetingView from './MeetingView';
 import type { Role } from '@/src/features/room/liveblocks.config';
 import type { RecorderApi } from '@/src/features/recording/recorderApi';
@@ -28,7 +28,25 @@ interface Props {
 type Fetched =
   | { status: 'loading' }
   | { status: 'error'; message: string }
-  | { status: 'ready'; token: string; meetingId: string };
+  | { status: 'ready'; token: string; meetingId: string; micTrack: MediaStream | null };
+
+// Build a noise-suppressed mic track so the fan/background noise doesn't get
+// broadcast or recorded. Best-effort: if it fails (permission/unsupported), we
+// fall back to VideoSDK's default mic (which still applies browser-default NS).
+async function createSuppressedMicTrack(): Promise<MediaStream | null> {
+  try {
+    return await createMicrophoneAudioTrack({
+      noiseConfig: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+      },
+      encoderConfig: 'speech_standard',
+    });
+  } catch {
+    return null;
+  }
+}
 
 export default function VideoPanel({ roomId, role, name, onLocalWebcamTrack, recorderRef, guest }: Props) {
   const [state, setState] = useState<Fetched>({ status: 'loading' });
@@ -38,14 +56,22 @@ export default function VideoPanel({ roomId, role, name, onLocalWebcamTrack, rec
 
     (async () => {
       try {
-        const res = await fetch(`/api/videosdk-token?roomId=${encodeURIComponent(roomId)}`);
+        // Fetch the token and prepare the noise-suppressed mic track in parallel.
+        const [res, micTrack] = await Promise.all([
+          fetch(`/api/videosdk-token?roomId=${encodeURIComponent(roomId)}`),
+          createSuppressedMicTrack(),
+        ]);
         const data = await res.json();
-        if (cancelled) return;
+        if (cancelled) {
+          micTrack?.getTracks().forEach((t) => t.stop());
+          return;
+        }
         if (!res.ok || !data.token || !data.meetingId) {
+          micTrack?.getTracks().forEach((t) => t.stop());
           setState({ status: 'error', message: data.error || 'Could not start video.' });
           return;
         }
-        setState({ status: 'ready', token: data.token, meetingId: data.meetingId });
+        setState({ status: 'ready', token: data.token, meetingId: data.meetingId, micTrack });
       } catch (err) {
         if (cancelled) return;
         const message = err instanceof Error ? err.message : String(err);
@@ -85,10 +111,11 @@ export default function VideoPanel({ roomId, role, name, onLocalWebcamTrack, rec
       config={{
         meetingId: state.meetingId,
         name,
-        // Join MUTED by default — avoids broadcasting background/fan noise until
-        // the participant actively unmutes. Camera stays on.
-        micEnabled: false,
+        // Join UNMUTED so the interview auto-records/transcribes. Fan/background
+        // noise is filtered by the noise-suppressed custom mic track below.
+        micEnabled: true,
         webcamEnabled: true,
+        customMicrophoneAudioTrack: state.micTrack ?? undefined,
         debugMode: false,
       }}
     >
