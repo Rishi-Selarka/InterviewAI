@@ -62,6 +62,7 @@ export default function RoomLayout({ roomId, role, name, interviewId, interviewe
   const [wrapPhase, setWrapPhase] = useState<WrapPhase>('idle');
   const [wrapStatus, setWrapStatus] = useState('');
   const [wrapError, setWrapError] = useState<string | null>(null);
+  const [wrapWarn, setWrapWarn] = useState<string | null>(null);
 
   const proctoring = useCandidateProctoring();
 
@@ -87,6 +88,7 @@ export default function RoomLayout({ roomId, role, name, interviewId, interviewe
 
     const lookAwayCount = proctoring.lookAwayCount;
     setWrapError(null);
+    setWrapWarn(null);
     setWrapStatus('Finalising recording…');
     setWrapPhase('processing');
 
@@ -94,6 +96,8 @@ export default function RoomLayout({ roomId, role, name, interviewId, interviewe
       interviewer: null,
       candidate: null,
     };
+
+    // --- Critical steps: stop recording, upload audio, mark ended. -------------
     try {
       // Stop the recorder while the video panel is still mounted, then free the
       // candidate (they go to the wrap-up screen).
@@ -111,12 +115,6 @@ export default function RoomLayout({ roomId, role, name, interviewId, interviewe
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ interviewId, lookAwayCount }),
       });
-
-      if (!guest && (blobs.interviewer || blobs.candidate)) {
-        await transcribeAndStore(interviewId, blobs, setWrapStatus);
-      }
-
-      setWrapPhase('done');
     } catch (e) {
       setWrapError(e instanceof Error ? e.message : String(e));
       setWrapPhase('error');
@@ -128,7 +126,24 @@ export default function RoomLayout({ roomId, role, name, interviewId, interviewe
         body: JSON.stringify({ interviewId, lookAwayCount }),
         keepalive: true,
       }).catch(() => {});
+      return;
     }
+
+    // --- Transcription is BEST-EFFORT. It runs an in-browser model that can fail
+    // on some machines; its failure must NOT surface as a scary error, because
+    // the audio is already saved and transcription can be re-run from the report.
+    if (!guest && (blobs.interviewer || blobs.candidate)) {
+      try {
+        setWrapStatus('Transcribing — this can take a few minutes…');
+        await transcribeAndStore(interviewId, blobs, setWrapStatus);
+      } catch {
+        setWrapWarn(
+          'The transcript couldn’t be generated in this browser, but the audio is saved — you can re-run transcription from the report.',
+        );
+      }
+    }
+
+    setWrapPhase('done');
   };
 
   // The candidate leaves the moment the interview ends. The interviewer also gets
@@ -236,6 +251,7 @@ export default function RoomLayout({ roomId, role, name, interviewId, interviewe
           phase={wrapPhase}
           status={wrapStatus}
           error={wrapError}
+          warn={wrapWarn}
           interviewId={interviewId}
         />
       )}
@@ -247,11 +263,13 @@ function WrapUpOverlay({
   phase,
   status,
   error,
+  warn,
   interviewId,
 }: {
   phase: WrapPhase;
   status: string;
   error: string | null;
+  warn: string | null;
   interviewId: string;
 }) {
   return (
@@ -273,8 +291,15 @@ function WrapUpOverlay({
             </div>
             <h2 className="text-lg font-bold text-white">Interview saved</h2>
             <p className="mt-2 text-sm text-muted">
-              The recording and transcript are stored. View the report or head back.
+              {warn
+                ? 'The recording is saved. View the report or head back.'
+                : 'The recording and transcript are stored. View the report or head back.'}
             </p>
+            {warn && (
+              <p className="mt-3 rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-300">
+                {warn}
+              </p>
+            )}
             <div className="mt-6 flex flex-col justify-center gap-2 sm:flex-row">
               <Link href={`/interviews/${interviewId}`} className="btn-primary">
                 View report

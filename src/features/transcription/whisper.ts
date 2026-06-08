@@ -6,9 +6,10 @@
 
 import type { TranscriptSegment } from './types';
 
-// A small/base English Whisper model — a good speed/quality trade-off for the
-// browser. Multilingual would be `Xenova/whisper-base`.
-const MODEL_ID = 'Xenova/whisper-base.en';
+// The TINY English Whisper model — the most reliable + fastest in-browser option
+// (smallest download, fewest ONNX quantization issues). Quality is basic but it
+// runs everywhere; base/large need a cloud transcriber for reliability.
+const MODEL_ID = 'Xenova/whisper-tiny.en';
 
 type StatusFn = (message: string) => void;
 

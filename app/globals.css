@@ -101,6 +101,16 @@ body {
   }
 }
 
+/* Native-fullscreen video should show the whole frame, letterboxed on black. */
+video:fullscreen {
+  object-fit: contain;
+  background: #000;
+}
+video:-webkit-full-screen {
+  object-fit: contain;
+  background: #000;
+}
+
 /* Hide the third-party "Powered by Liveblocks" free-tier badge. */
 #liveblocks-badge,
 a[href*="liveblocks.io"],

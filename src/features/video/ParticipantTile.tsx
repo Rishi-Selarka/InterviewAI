@@ -7,9 +7,23 @@
 // Because we hold the local webcam track directly here, frames stay fully
 // readable for the upcoming MediaPipe look-away proctoring (see onLocalWebcamTrack).
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useParticipant } from '@videosdk.live/react-sdk';
 import type { ProctoringState } from '@/src/features/room/liveblocks.config';
+
+// Native fullscreen of a specific <video>. Works for BOTH the local and remote
+// tiles (and iOS Safari) — unlike cloning the stream into a second <video>, which
+// could fail to render a remote track already attached to the inline tile.
+function enterFullscreen(el: HTMLVideoElement | null) {
+  if (!el) return;
+  const v = el as HTMLVideoElement & {
+    webkitRequestFullscreen?: () => void;
+    webkitEnterFullscreen?: () => void;
+  };
+  if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
+  else if (v.webkitRequestFullscreen) v.webkitRequestFullscreen();
+  else if (v.webkitEnterFullscreen) v.webkitEnterFullscreen();
+}
 
 interface Props {
   participantId: string;
@@ -35,9 +49,7 @@ export default function ParticipantTile({
     useParticipant(participantId);
 
   const videoRef = useRef<HTMLVideoElement>(null);
-  const overlayVideoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
-  const [expanded, setExpanded] = useState(false);
 
   // Attach (or detach) the webcam video.
   useEffect(() => {
@@ -56,21 +68,6 @@ export default function ParticipantTile({
       if (isLocal) onLocalWebcamTrack?.(null);
     }
   }, [webcamStream, webcamOn, isLocal, onLocalWebcamTrack]);
-
-  // Attach the same track to the overlay video when expanded.
-  useEffect(() => {
-    const el = overlayVideoRef.current;
-    if (!el) return;
-
-    if (expanded && webcamOn && webcamStream?.track) {
-      const stream = new MediaStream();
-      stream.addTrack(webcamStream.track);
-      el.srcObject = stream;
-      el.play().catch(() => {});
-    } else {
-      el.srcObject = null;
-    }
-  }, [expanded, webcamStream, webcamOn]);
 
   // Play remote audio. The local mic is never played back (that would echo).
   useEffect(() => {
@@ -112,7 +109,6 @@ export default function ParticipantTile({
       : 'rounded bg-amber-500/90 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-black';
 
   return (
-    <>
       <div
         className={`relative aspect-video w-full overflow-hidden rounded-lg border-2 bg-zinc-800 transition-colors ${borderCls}`}
       >
@@ -133,21 +129,23 @@ export default function ParticipantTile({
           </div>
         )}
 
-        {/* Expand / fullscreen button — top-right corner */}
-        <button
-          onClick={() => setExpanded(true)}
-          title="Expand video"
-          className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded bg-black/60 text-zinc-300 transition-colors hover:bg-black/80 hover:text-white"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            className="h-3.5 w-3.5"
+        {/* Fullscreen button — top-right corner (only when there's a video). */}
+        {webcamOn && (
+          <button
+            onClick={() => enterFullscreen(videoRef.current)}
+            title="Fullscreen video"
+            className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded bg-black/60 text-zinc-300 transition-colors hover:bg-black/80 hover:text-white"
           >
-            <path d="M3 3h5v1.5H4.5V8H3V3zm9 0h5v5h-1.5V4.5H12V3zM3 12h1.5v3.5H8V17H3v-5zm12 3.5H11.5V17H17v-5h-1.5v3.5z" />
-          </svg>
-        </button>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              className="h-3.5 w-3.5"
+            >
+              <path d="M3 3h5v1.5H4.5V8H3V3zm9 0h5v5h-1.5V4.5H12V3zM3 12h1.5v3.5H8V17H3v-5zm12 3.5H11.5V17H17v-5h-1.5v3.5z" />
+            </svg>
+          </button>
+        )}
 
         {/* Interviewer-only: integrity badges. */}
         {lookAway && (
@@ -201,50 +199,5 @@ export default function ParticipantTile({
 
         {!isLocal && <audio ref={audioRef} autoPlay playsInline />}
       </div>
-
-      {/* Fullscreen overlay */}
-      {expanded && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-black/95">
-          {/* Top bar */}
-          <div className="flex items-center justify-between px-4 py-3">
-            <span className="text-sm font-medium text-zinc-200">
-              {displayName || 'Participant'}
-              {isLocal && ' (you)'}
-            </span>
-            <button
-              onClick={() => setExpanded(false)}
-              title="Minimize"
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-800 text-zinc-300 transition-colors hover:bg-zinc-700 hover:text-white"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                className="h-4 w-4"
-              >
-                <path d="M3 8h5V3H6.5v3.5H3V8zm9-5v1.5h3.5V8H17V3h-5zm-9 9H3v5h5v-1.5H4.5V12H3zm11.5 3.5V12H17v5h-5v-1.5h3.5z" />
-              </svg>
-            </button>
-          </div>
-
-          {/* Video centered, object-contain */}
-          <div className="flex flex-1 items-center justify-center p-4">
-            {webcamOn ? (
-              <video
-                ref={overlayVideoRef}
-                autoPlay
-                playsInline
-                muted={isLocal}
-                className={`max-h-full max-w-full rounded-lg object-contain ${isLocal ? '-scale-x-100' : ''}`}
-              />
-            ) : (
-              <div className="flex h-32 w-32 items-center justify-center rounded-full bg-zinc-800 text-4xl font-semibold text-zinc-200">
-                {(displayName || '?').charAt(0).toUpperCase()}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </>
   );
 }

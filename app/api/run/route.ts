@@ -27,6 +27,40 @@ const MAX_OUTPUT_BYTES = 1024 * 1024;
 
 type RunResult = { stdout: string; stderr: string; error: string | null };
 
+// Judge0 (and our local runner) compile Java as `Main.java` and run the `Main`
+// class, so the entry class MUST be named Main. Candidates paste snippets with
+// any class name (e.g. `public class Solution`, `public class BinarySearch`),
+// which would otherwise fail with "class X is public, should be declared in a
+// file named X.java". This rewrites the relevant class name to Main so any valid
+// Java just runs.
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function normalizeJavaSource(code: string): string {
+  const rename = (name: string) =>
+    name === 'Main'
+      ? code
+      : code.replace(new RegExp(`\\b${escapeRegExp(name)}\\b`, 'g'), 'Main');
+
+  // 1) A public top-level class — Java allows only one, and its name drives the
+  //    required filename. Rename it (and its constructor/`new` references) to Main.
+  const pub = code.match(/\bpublic\s+class\s+([A-Za-z_$][\w$]*)/);
+  if (pub) return rename(pub[1]);
+
+  // 2) Already has a `Main` class — leave it alone.
+  if (/\bclass\s+Main\b/.test(code)) return code;
+
+  // 3) No public class: if some class declares `main`, rename the first class so
+  //    `java Main` finds an entry point.
+  if (/\bstatic\s+(?:final\s+)?void\s+main\b/.test(code)) {
+    const first = code.match(/\bclass\s+([A-Za-z_$][\w$]*)/);
+    if (first) return rename(first[1]);
+  }
+
+  return code;
+}
+
 function localExecutionEnabled(): boolean {
   return (
     process.env.NODE_ENV !== 'production' &&
@@ -192,10 +226,14 @@ export async function POST(request: Request) {
     );
   }
 
+  // Java entry class must be `Main` for the compiler/runner — normalize any
+  // pasted class name so valid Java just works.
+  const finalCode = language === 'java' ? normalizeJavaSource(code) : code;
+
   try {
     const result = localExecutionEnabled()
-      ? await runLocal(language, code)
-      : await runViaJudge0(language, code);
+      ? await runLocal(language, finalCode)
+      : await runViaJudge0(language, finalCode);
     return Response.json(result);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
