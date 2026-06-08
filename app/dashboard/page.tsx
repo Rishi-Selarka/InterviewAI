@@ -49,9 +49,8 @@ export default async function DashboardPage() {
 function Sidebar({ name, avatarUrl }: { name: string; avatarUrl: string }) {
   return (
     <aside className="hidden w-60 shrink-0 flex-col border-r border-line bg-ink2/60 lg:flex">
-      <div className="flex items-center justify-between px-5 py-5">
+      <div className="px-5 py-5">
         <Logo href="/" textClassName="text-lg" markClassName="h-8 w-8" />
-        <ThemeToggle />
       </div>
 
       <nav className="flex-1 px-3">
@@ -76,8 +75,9 @@ function Sidebar({ name, avatarUrl }: { name: string; avatarUrl: string }) {
             <div className="text-xs text-faint">View profile</div>
           </div>
         </Link>
-        <div className="mt-2">
-          <SignOutButton />
+        <div className="mt-2 flex items-center gap-2">
+          <SignOutButton className="flex-1 rounded-xl border border-line bg-surface px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface2 hover:text-strong" />
+          <ThemeToggle className="shrink-0" />
         </div>
       </div>
     </aside>

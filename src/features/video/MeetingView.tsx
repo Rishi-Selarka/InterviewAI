@@ -6,6 +6,7 @@
 // rejoin affordance.
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useMeeting } from '@videosdk.live/react-sdk';
 import ParticipantTile from './ParticipantTile';
 import CandidateProctor from '@/src/features/proctoring/CandidateProctor';
@@ -76,6 +77,7 @@ function IconHangUp() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function MeetingView({ role, onLocalWebcamTrack, recorderRef, guest }: Props) {
+  const router = useRouter();
   const [state, setState] = useState<MeetingState>('connecting');
 
   // Interviewer reads the candidate's broadcast look-away state (no-op data for
@@ -108,14 +110,41 @@ export default function MeetingView({ role, onLocalWebcamTrack, recorderRef, gue
   const remoteCount = orderedIds.filter((id) => id !== localId).length;
 
   if (state === 'left') {
+    const rejoin = () => {
+      setState('connecting');
+      join();
+    };
+
+    // Candidate: leaving the call must block the whole room — they should not be
+    // able to keep editing code after stepping out. Cover everything with a
+    // full-screen gate offering Rejoin or Leave (back to the home screen).
+    if (role === 'candidate') {
+      return (
+        <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center gap-5 bg-ink/95 p-6 text-center backdrop-blur-sm">
+          <div className="card max-w-sm p-8">
+            <h2 className="text-xl font-bold text-white">You left the interview</h2>
+            <p className="mt-2 text-sm text-muted">
+              Rejoin to continue, or leave and return to the home screen.
+            </p>
+            <div className="mt-6 flex flex-col justify-center gap-2 sm:flex-row">
+              <button onClick={rejoin} className="btn-primary">
+                Rejoin interview
+              </button>
+              <button onClick={() => router.push('/')} className="btn-ghost">
+                Leave
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Interviewer: keep an inline rejoin so they still have their evaluation tools.
     return (
       <div className="flex flex-col items-center gap-3 rounded-lg border border-zinc-700 bg-zinc-900 p-6 text-center">
         <p className="text-sm text-zinc-300">You left the video call.</p>
         <button
-          onClick={() => {
-            setState('connecting');
-            join();
-          }}
+          onClick={rejoin}
           className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
         >
           Rejoin video

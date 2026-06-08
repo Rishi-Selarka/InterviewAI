@@ -1,9 +1,9 @@
 'use client';
 
-// Landing onboarding (authenticated flow). "Host" sends you to the dashboard
-// (which prompts login if needed) where interviewers create interviews and get an
-// invite link. "Join" takes a room code or pasted invite link straight to the
-// room, which requires login and seats you as the candidate.
+// Landing onboarding. "Host" sends you to the dashboard (which prompts login if
+// needed) where interviewers create interviews and get an invite link. "Join"
+// takes a room code or pasted invite link straight to the room, where the
+// candidate joins as a guest (name only — no sign-in required).
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -57,7 +57,7 @@ export default function GuestStart() {
 
       {error && <p className="mt-2 text-sm text-rose-300">{error}</p>}
       <p className="mt-3 text-center text-[11px] text-faint">
-        You&apos;ll sign in to host or join — it takes a few seconds.
+        Hosting needs a quick sign-in. Joining a room needs only the link — no account.
       </p>
     </div>
   );
