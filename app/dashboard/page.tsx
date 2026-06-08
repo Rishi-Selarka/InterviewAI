@@ -28,14 +28,18 @@ export default async function DashboardPage() {
       <Sidebar name={name} avatarUrl={profile.avatar_url} />
 
       <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
-        {/* Brand image watermark behind the content (everything except the
-            sidebar). 50% opacity + a soft scrim so the cards/rows still read well. */}
+        {/* Brand image behind the content (everything except the sidebar). A soft
+            top-weighted gradient keeps the heading readable while letting the photo
+            show through; the cards on top use a translucent glass effect. */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 bg-cover bg-center opacity-50"
+          className="pointer-events-none absolute inset-0 bg-cover bg-center opacity-70"
           style={{ backgroundImage: 'url(/interviewai.jpeg)' }}
         />
-        <div aria-hidden className="pointer-events-none absolute inset-0 bg-ink/55" />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-gradient-to-b from-ink/80 via-ink/45 to-ink/30"
+        />
 
         {/* Mobile top bar */}
         <header className="relative z-10 flex items-center justify-between border-b border-line px-5 py-3 lg:hidden">
@@ -155,13 +159,19 @@ function InterviewerDashboard({
     <>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-strong">Welcome back, {name} 👋</h1>
-          <p className="mt-1 text-sm text-muted">Create an interview and share the invite link.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-strong [text-shadow:0_1px_12px_rgb(0_0_0_/_55%)]">
+            Welcome back, {name} 👋
+          </h1>
+          <p className="mt-1 text-sm text-fg [text-shadow:0_1px_8px_rgb(0_0_0_/_55%)]">
+            Create an interview and share the invite link.
+          </p>
         </div>
         <NewInterviewButton />
       </div>
 
-      <h2 className="mb-3 mt-9 text-lg font-semibold text-strong">Your interviews</h2>
+      <h2 className="mb-3 mt-9 text-lg font-semibold text-strong [text-shadow:0_1px_10px_rgb(0_0_0_/_55%)]">
+        Your interviews
+      </h2>
       <InterviewList interviews={interviews} />
     </>
   );

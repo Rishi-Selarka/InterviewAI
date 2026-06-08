@@ -63,7 +63,7 @@ export default function NewInterviewButton() {
   if (roomId) {
     const displayName = createdTitle || roomId;
     return (
-      <div className="card w-full border-brand/30 bg-brand/5 p-4 sm:max-w-md">
+      <div className="glass w-full border-brand/40 p-4 sm:max-w-md">
         <p className="text-sm font-medium text-strong">
           <span className="text-brandbright">{displayName}</span> created. Share this link with
           your candidate:
@@ -73,7 +73,7 @@ export default function NewInterviewButton() {
             readOnly
             value={inviteLink}
             onFocus={(e) => e.currentTarget.select()}
-            className="flex-1 rounded-xl border border-line bg-ink2 px-3 py-2 font-mono text-xs text-fg"
+            className="flex-1 rounded-xl border border-white/15 bg-surface/50 px-3 py-2 font-mono text-xs text-fg backdrop-blur-md"
           />
           <button onClick={copy} className="btn-ghost px-4 py-2">
             {copied ? '✓ Copied' : 'Copy'}
@@ -94,7 +94,7 @@ export default function NewInterviewButton() {
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
       <div className="flex flex-col gap-1">
-        <label htmlFor="interview-title" className="text-xs text-muted">
+        <label htmlFor="interview-title" className="text-xs text-fg [text-shadow:0_1px_8px_rgb(0_0_0_/_55%)]">
           Interview name (optional)
         </label>
         <input
@@ -104,7 +104,7 @@ export default function NewInterviewButton() {
           onChange={(e) => setTitle(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && !busy && create()}
           placeholder="e.g. Frontend screen — Aman"
-          className="input w-64 text-sm"
+          className="w-64 rounded-xl border border-white/15 bg-surface/50 px-3.5 py-2.5 text-sm text-fg placeholder-faint outline-none backdrop-blur-md transition-colors focus:border-brand"
         />
       </div>
       <div className="flex flex-col gap-1">
