@@ -89,7 +89,7 @@ function Sidebar({ name, avatarUrl }: { name: string; avatarUrl: string }) {
           </div>
         </Link>
         <div className="mt-2 flex items-center gap-2">
-          <SignOutButton className="flex-1 rounded-xl border border-line bg-surface px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface2 hover:text-strong" />
+          <SignOutButton className="flex-1 rounded-xl border border-line bg-surface px-3 py-2 text-sm font-medium text-rose-500 transition-colors hover:border-rose-500/40 hover:bg-rose-500/10 hover:text-rose-600" />
           <ThemeToggle className="shrink-0" />
         </div>
       </div>

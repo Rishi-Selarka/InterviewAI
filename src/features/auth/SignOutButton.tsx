@@ -16,7 +16,7 @@ export default function SignOutButton({ className }: { className?: string }) {
       onClick={handle}
       className={
         className ??
-        'w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface2 hover:text-strong'
+        'w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm font-medium text-rose-500 transition-colors hover:border-rose-500/40 hover:bg-rose-500/10 hover:text-rose-600'
       }
     >
       Sign out
