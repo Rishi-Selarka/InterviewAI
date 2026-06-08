@@ -9,8 +9,10 @@ import { useRouter } from 'next/navigation';
 export default function NewInterviewButton() {
   const router = useRouter();
   const [title, setTitle] = useState('');
+  const [scheduledAt, setScheduledAt] = useState(''); // datetime-local value
   const [roomId, setRoomId] = useState<string | null>(null);
   const [createdTitle, setCreatedTitle] = useState<string | null>(null);
+  const [createdScheduled, setCreatedScheduled] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -24,10 +26,12 @@ export default function NewInterviewButton() {
     setBusy(true);
     setError(null);
     try {
+      // datetime-local has no timezone; convert to a real ISO instant.
+      const scheduledIso = scheduledAt ? new Date(scheduledAt).toISOString() : undefined;
       const res = await fetch('/api/interviews', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: title.trim() || undefined }),
+        body: JSON.stringify({ title: title.trim() || undefined, scheduledAt: scheduledIso }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -36,6 +40,7 @@ export default function NewInterviewButton() {
       }
       setRoomId(data.roomId);
       setCreatedTitle(title.trim() || null);
+      setCreatedScheduled(data.status === 'scheduled');
       router.refresh(); // refresh the list behind the panel
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -57,7 +62,9 @@ export default function NewInterviewButton() {
   const reset = () => {
     setRoomId(null);
     setCreatedTitle(null);
+    setCreatedScheduled(false);
     setTitle('');
+    setScheduledAt('');
   };
 
   const displayName = createdTitle || roomId;
@@ -77,12 +84,24 @@ export default function NewInterviewButton() {
             onChange={(e) => setTitle(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && !busy && create()}
             placeholder="e.g. Software Developer"
-            className="input w-64 text-sm"
+            className="input w-56 text-sm"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label htmlFor="interview-schedule" className="text-xs text-muted">
+            Schedule (optional)
+          </label>
+          <input
+            id="interview-schedule"
+            type="datetime-local"
+            value={scheduledAt}
+            onChange={(e) => setScheduledAt(e.target.value)}
+            className="input w-56 text-sm [color-scheme:dark]"
           />
         </div>
         <div className="flex flex-col gap-1">
           <button onClick={create} disabled={busy} className="btn-primary">
-            {busy ? 'Creating…' : '+ New interview'}
+            {busy ? 'Creating…' : scheduledAt ? '＋ Schedule' : '＋ New interview'}
           </button>
           {error && <p className="text-sm text-rose-300">{error}</p>}
         </div>
@@ -100,7 +119,8 @@ export default function NewInterviewButton() {
           >
             <div className="flex items-start justify-between gap-3">
               <p className="text-base font-semibold text-strong">
-                <span className="text-brandbright">{displayName}</span> created
+                <span className="text-brandbright">{displayName}</span>{' '}
+                {createdScheduled ? 'scheduled' : 'created'}
               </p>
               <button
                 onClick={reset}
@@ -113,7 +133,11 @@ export default function NewInterviewButton() {
                 </svg>
               </button>
             </div>
-            <p className="mt-1 text-sm text-muted">Share this link with your candidate:</p>
+            <p className="mt-1 text-sm text-muted">
+              {createdScheduled
+                ? 'Candidates will see this on their dashboard. Share the link too:'
+                : 'Share this link with your candidate:'}
+            </p>
 
             <div className="mt-4 flex flex-col gap-2 sm:flex-row">
               <input

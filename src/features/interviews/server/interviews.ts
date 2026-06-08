@@ -21,7 +21,8 @@ export interface Interview {
   candidate_id: string | null;
   videosdk_meeting_id: string | null;
   active_problem_id: string | null;
-  status: 'created' | 'active' | 'ended';
+  status: 'created' | 'active' | 'ended' | 'scheduled';
+  scheduled_at: string | null;
   created_at: string;
   started_at: string | null;
   ended_at: string | null;
@@ -33,14 +34,22 @@ function shortRoomId(): string {
   return globalThis.crypto.randomUUID().split('-')[0];
 }
 
-/** Create an interview owned by `interviewerId`, minting a room id + meeting id. */
+/**
+ * Create an interview owned by `interviewerId`, minting a room id + meeting id.
+ * If `scheduledAt` (ISO) is given, the interview starts life as 'scheduled' so it
+ * shows up on the candidate's "available interviews" list ahead of time.
+ */
 export async function createInterview(
   interviewerId: string,
   title = '',
+  scheduledAt?: string | null,
 ): Promise<Interview> {
   const admin = createAdminClient();
 
   const meetingId = credentialsConfigured() ? await createVideoSdkMeeting() : null;
+
+  const scheduled = scheduledAt ? new Date(scheduledAt) : null;
+  const validSchedule = scheduled && !Number.isNaN(scheduled.getTime()) ? scheduled : null;
 
   // Retry once on the (extremely unlikely) room_id collision.
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -52,7 +61,8 @@ export async function createInterview(
         title: title.trim().slice(0, 80),
         interviewer_id: interviewerId,
         videosdk_meeting_id: meetingId,
-        status: 'created',
+        status: validSchedule ? 'scheduled' : 'created',
+        scheduled_at: validSchedule ? validSchedule.toISOString() : null,
       })
       .select('*')
       .single();
@@ -97,6 +107,22 @@ export async function listInterviewsForInterviewer(interviewerId: string): Promi
     .from('interviews')
     .select('*')
     .eq('interviewer_id', interviewerId)
+    .order('created_at', { ascending: false });
+  return (data as Interview[]) ?? [];
+}
+
+/**
+ * Interviews a candidate can join right now or soon: every 'scheduled' or 'active'
+ * interview (open-list model — any signed-in candidate sees all of them). Soonest
+ * scheduled first, then live ones.
+ */
+export async function listAvailableInterviews(): Promise<Interview[]> {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from('interviews')
+    .select('*')
+    .in('status', ['scheduled', 'active'])
+    .order('scheduled_at', { ascending: true, nullsFirst: false })
     .order('created_at', { ascending: false });
   return (data as Interview[]) ?? [];
 }

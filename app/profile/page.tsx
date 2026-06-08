@@ -68,7 +68,7 @@ export default async function ProfilePage() {
                 className="h-20 w-20 shrink-0 rounded-full object-cover ring-2 ring-line2"
               />
             ) : (
-              <span className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand2 to-brand text-2xl font-bold text-strong ring-2 ring-line2">
+              <span className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand2 to-brand text-2xl font-bold text-onbrand ring-2 ring-line2">
                 {initial}
               </span>
             )}

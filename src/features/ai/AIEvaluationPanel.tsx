@@ -86,7 +86,7 @@ export default function AIEvaluationPanel({ apiRef }: { apiRef: RefObject<Editor
       <button
         onClick={run}
         disabled={busy}
-        className="rounded-lg bg-gradient-to-r from-brand2 to-brand px-3 py-2 text-sm font-semibold text-white shadow-lg shadow-brand/20 transition-opacity hover:opacity-90 disabled:opacity-60"
+        className="rounded-lg bg-gradient-to-r from-brand2 to-brand px-3 py-2 text-sm font-semibold text-onbrand shadow-lg shadow-brand/20 transition-opacity hover:opacity-90 disabled:opacity-60"
       >
         {busy ? 'Analyzing the solution…' : '✨ Evaluate with AI'}
       </button>
