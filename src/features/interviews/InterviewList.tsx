@@ -74,8 +74,8 @@ export default function InterviewList({ interviews }: { interviews: Interview[] 
               key={key}
               onClick={() => setActiveTab(key)}
               aria-pressed={selected}
-              className={`glass flex flex-col gap-1 p-4 text-left ${
-                selected ? 'border-brand bg-brand/25' : 'glass-hover'
+              className={`card card-hover flex flex-col gap-1 p-4 text-left transition-colors ${
+                selected ? 'border-brand bg-brand/10' : ''
               }`}
             >
               <span
@@ -99,7 +99,7 @@ export default function InterviewList({ interviews }: { interviews: Interview[] 
 
       {/* List */}
       {filtered.length === 0 ? (
-        <div className="glass border-dashed p-10 text-center">
+        <div className="card border-dashed p-10 text-center">
           <p className="text-sm text-muted">
             {activeTab === 'all'
               ? <>No interviews yet. Click <strong className="text-fg">New interview</strong> to create one.</>
@@ -114,7 +114,7 @@ export default function InterviewList({ interviews }: { interviews: Interview[] 
             return (
               <li
                 key={iv.id}
-                className="glass glass-hover flex items-center justify-between px-4 py-3.5"
+                className="card card-hover flex items-center justify-between px-4 py-3.5"
               >
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">

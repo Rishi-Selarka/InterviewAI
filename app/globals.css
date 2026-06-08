@@ -77,21 +77,6 @@ body {
   .card-hover {
     @apply transition-colors hover:border-line2 hover:bg-surface2;
   }
-  /* Liquid-glass: translucent, blurred panel for use over imagery (dashboard).
-     Lets the background photo show through instead of a flat opaque card. */
-  .glass {
-    @apply rounded-2xl border;
-    background-color: color-mix(in srgb, var(--color-surface) 42%, transparent);
-    border-color: color-mix(in srgb, var(--color-strong) 16%, transparent);
-    backdrop-filter: blur(16px) saturate(150%);
-    -webkit-backdrop-filter: blur(16px) saturate(150%);
-  }
-  .glass-hover {
-    @apply transition-colors;
-  }
-  .glass-hover:hover {
-    background-color: color-mix(in srgb, var(--color-surface) 58%, transparent);
-  }
   /* Solid, understated primary — orange in both themes. */
   .btn-primary {
     @apply inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-5 py-2.5

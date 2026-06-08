@@ -77,7 +77,7 @@ export default function NewInterviewButton() {
             onChange={(e) => setTitle(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && !busy && create()}
             placeholder="e.g. Software Developer"
-            className="w-64 rounded-xl border border-white/15 bg-surface/50 px-3.5 py-2.5 text-sm text-fg placeholder-faint outline-none backdrop-blur-md transition-colors focus:border-brand"
+            className="input w-64 text-sm"
           />
         </div>
         <div className="flex flex-col gap-1">

@@ -27,19 +27,9 @@ export default async function DashboardPage() {
     <div className="flex flex-1">
       <Sidebar name={name} avatarUrl={profile.avatar_url} />
 
-      <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
-        {/* Brand illustration behind the content (everything except the sidebar).
-            A light, subtle tint keeps the cards/text legible while letting the
-            illustration show through; the cards on top use a translucent glass. */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 bg-cover bg-center opacity-90"
-          style={{ backgroundImage: 'url(/interviewai.jpeg)' }}
-        />
-        <div aria-hidden className="pointer-events-none absolute inset-0 bg-ink/25" />
-
+      <div className="flex min-w-0 flex-1 flex-col">
         {/* Mobile top bar */}
-        <header className="relative z-10 flex items-center justify-between border-b border-line px-5 py-3 lg:hidden">
+        <header className="flex items-center justify-between border-b border-line px-5 py-3 lg:hidden">
           <Logo href="/" textClassName="text-base" markClassName="h-7 w-7" />
           <div className="flex items-center gap-2">
             <ThemeToggle />
@@ -48,7 +38,7 @@ export default async function DashboardPage() {
           </div>
         </header>
 
-        <main className="relative z-10 mx-auto w-full max-w-5xl px-6 py-8">
+        <main className="mx-auto w-full max-w-5xl px-6 py-8">
           <InterviewerDashboard interviews={interviews} name={name} />
         </main>
       </div>
