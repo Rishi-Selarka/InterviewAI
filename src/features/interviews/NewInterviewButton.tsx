@@ -96,7 +96,7 @@ export default function NewInterviewButton() {
             type="datetime-local"
             value={scheduledAt}
             onChange={(e) => setScheduledAt(e.target.value)}
-            className="input w-56 text-sm [color-scheme:dark]"
+            className="input w-56 text-sm"
           />
         </div>
         <div className="flex flex-col gap-1">
