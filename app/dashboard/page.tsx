@@ -159,19 +159,13 @@ function InterviewerDashboard({
     <>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-strong [text-shadow:0_1px_12px_rgb(0_0_0_/_55%)]">
-            Welcome back, {name} 👋
-          </h1>
-          <p className="mt-1 text-sm text-fg [text-shadow:0_1px_8px_rgb(0_0_0_/_55%)]">
-            Create an interview and share the invite link.
-          </p>
+          <h1 className="text-2xl font-bold tracking-tight text-strong">Welcome back, {name} 👋</h1>
+          <p className="mt-1 text-sm text-muted">Create an interview and share the invite link.</p>
         </div>
         <NewInterviewButton />
       </div>
 
-      <h2 className="mb-3 mt-9 text-lg font-semibold text-strong [text-shadow:0_1px_10px_rgb(0_0_0_/_55%)]">
-        Your interviews
-      </h2>
+      <h2 className="mb-3 mt-9 text-lg font-semibold text-strong">Your interviews</h2>
       <InterviewList interviews={interviews} />
     </>
   );

@@ -94,7 +94,7 @@ export default function NewInterviewButton() {
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
       <div className="flex flex-col gap-1">
-        <label htmlFor="interview-title" className="text-xs text-fg [text-shadow:0_1px_8px_rgb(0_0_0_/_55%)]">
+        <label htmlFor="interview-title" className="text-xs text-muted">
           Interview name (optional)
         </label>
         <input
