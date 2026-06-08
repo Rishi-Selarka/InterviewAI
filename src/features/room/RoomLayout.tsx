@@ -55,6 +55,7 @@ export default function RoomLayout({ roomId, role, name, interviewId, interviewe
   const recorderRef = useRef<RecorderApi | null>(null);
   const [tab, setTab] = useState<Tab>('ai');
   const [showInterviewer, setShowInterviewer] = useState(false);
+  const [evalOpen, setEvalOpen] = useState(false);
 
   // End-of-interview wrap-up (interviewer side): stop recording → upload → mark
   // ended → transcribe in-browser → store. The candidate leaves immediately; the
@@ -220,22 +221,15 @@ export default function RoomLayout({ roomId, role, name, interviewId, interviewe
             <>
               <IntegrityMonitor />
 
-              {/* Tabbed evaluation tools — keeps the panel uncluttered. */}
-              <div className="card overflow-hidden">
-                <div className="flex border-b border-line">
-                  <TabButton active={tab === 'ai'} onClick={() => setTab('ai')}>
-                    AI Judge
-                  </TabButton>
-                  <TabButton active={tab === 'score'} onClick={() => setTab('score')}>
-                    Your score
-                  </TabButton>
-                </div>
-                {tab === 'ai' ? (
-                  <AIEvaluationPanel apiRef={apiRef} />
-                ) : (
-                  <ScoringPanel interviewId={interviewId} guest={guest} />
-                )}
-              </div>
+              {/* Evaluation tools open in a spacious modal (the sidebar is too
+                  narrow to show the AI judge + rubric fully). */}
+              <button
+                type="button"
+                onClick={() => setEvalOpen(true)}
+                className="card card-hover flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-semibold text-brandbright"
+              >
+                ✨ AI Judge &amp; Scoring
+              </button>
 
               {/* Headless: persists the look-away count (real interviews only).
                   The end + recording + transcript flow is the top-bar action. */}
@@ -251,6 +245,47 @@ export default function RoomLayout({ roomId, role, name, interviewId, interviewe
           interviewerId={interviewerId}
           onClose={() => setShowInterviewer(false)}
         />
+      )}
+
+      {/* Spacious evaluation modal (AI judge + rubric) — interviewer only. */}
+      {isInterviewer && evalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          onClick={() => setEvalOpen(false)}
+        >
+          <div
+            className="card flex max-h-[88vh] w-full max-w-2xl flex-col overflow-hidden shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex shrink-0 items-center justify-between border-b border-line pr-2">
+              <div className="flex">
+                <TabButton active={tab === 'ai'} onClick={() => setTab('ai')}>
+                  AI Judge
+                </TabButton>
+                <TabButton active={tab === 'score'} onClick={() => setTab('score')}>
+                  Your score
+                </TabButton>
+              </div>
+              <button
+                onClick={() => setEvalOpen(false)}
+                aria-label="Close"
+                className="btn-ghost rounded-md p-1.5"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              {tab === 'ai' ? (
+                <AIEvaluationPanel apiRef={apiRef} />
+              ) : (
+                <ScoringPanel interviewId={interviewId} guest={guest} />
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Interviewer wrap-up overlay — keeps the room mounted while recording is

@@ -25,14 +25,18 @@ interface Props {
 
 export default function ProblemPanel({ role, apiRef }: Props) {
   const activeProblemId = useStorage((root) => root.activeProblemId);
+  const problemPublished = useStorage((root) => root.problemPublished);
   const language = useStorage((root) => root.language);
 
   // Interviewer-only local state
   const [searchQuery, setSearchQuery] = useState('');
   const [guideOpen, setGuideOpen] = useState(false);
 
-  const setActiveProblem = useMutation(({ storage }, id: string) => {
+  // Selecting publishes the problem to the candidate (until then they see a
+  // waiting state, so the interviewer's browsing stays private).
+  const publishProblem = useMutation(({ storage }, id: string) => {
     storage.set('activeProblemId', id);
+    storage.set('problemPublished', true);
   }, []);
 
   // ── Search filtering (interviewer only). Must run before any early return so
@@ -55,6 +59,19 @@ export default function ProblemPanel({ role, apiRef }: Props) {
   const isInterviewer = role === 'interviewer';
   const showResults = searchQuery.trim().length > 0;
 
+  // Candidate sees nothing until the interviewer has selected/published a problem.
+  if (!isInterviewer && problemPublished !== true) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-3 bg-zinc-900 px-6 text-center">
+        <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-zinc-600 border-t-orange-400" />
+        <p className="text-sm font-medium text-zinc-300">Waiting for the interviewer</p>
+        <p className="max-w-[14rem] text-xs text-zinc-500">
+          The question will appear here as soon as the interviewer picks one.
+        </p>
+      </div>
+    );
+  }
+
   // ── Handlers ─────────────────────────────────────────────────────────────
   // Selecting a problem auto-loads ITS starter code into the shared editor, in
   // whatever language is currently selected. If the candidate has real work in
@@ -76,12 +93,12 @@ export default function ProblemPanel({ role, apiRef }: Props) {
           'participants (their current code will be lost).',
       )
     ) {
-      // Keep their code, just switch the problem statement.
-      setActiveProblem(id);
+      // Keep their code, just switch + publish the problem statement.
+      publishProblem(id);
       return;
     }
 
-    setActiveProblem(id);
+    publishProblem(id);
     apiRef.current?.loadCode(starterFor(next, language));
   };
 

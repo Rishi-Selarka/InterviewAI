@@ -64,6 +64,9 @@ declare global {
     // not stored here — see src/features/editor/CollaborativeEditor.tsx).
     Storage: {
       activeProblemId: string;
+      // The candidate only sees the problem once the interviewer has selected/
+      // published one — until then the interviewer's browsing stays private.
+      problemPublished: boolean;
       language: SupportedLanguage;
       // Latest run output, synced so both participants see the same result.
       output: string;

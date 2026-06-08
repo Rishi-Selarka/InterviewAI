@@ -48,6 +48,7 @@ export default function RoomClient({ roomId, role, name, interviewId, interviewe
         initialPresence={{ role, name }}
         initialStorage={{
           activeProblemId: DEFAULT_PROBLEM_ID,
+          problemPublished: false,
           language: 'javascript',
           output: '',
           running: false,
