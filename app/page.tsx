@@ -75,7 +75,7 @@ export default async function Home() {
             <span className="h-3 w-3 rounded-full bg-amber-400/80" />
             <span className="h-3 w-3 rounded-full bg-emerald-500/80" />
             <span className="ml-3 text-xs text-faint">solution.py — live room</span>
-            <span className="ml-auto rounded-md bg-gradient-to-r from-brand2 to-brand px-2.5 py-1 text-[11px] font-semibold text-onbrand">
+            <span className="ml-auto rounded-md bg-gradient-to-r from-brand2 to-brand px-2.5 py-1 text-[11px] font-semibold text-strong">
               ▶ Run
             </span>
           </div>

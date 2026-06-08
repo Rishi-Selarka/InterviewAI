@@ -6,12 +6,10 @@ import Link from 'next/link';
 import { getSessionProfile, displayName } from '@/src/features/auth/profile';
 import {
   listInterviewsForInterviewer,
-  listAvailableInterviews,
   type Interview,
 } from '@/src/features/interviews/server/interviews';
 import NewInterviewButton from '@/src/features/interviews/NewInterviewButton';
 import InterviewList from '@/src/features/interviews/InterviewList';
-import CandidateInterviews from '@/src/features/interviews/CandidateInterviews';
 import SignOutButton from '@/src/features/auth/SignOutButton';
 import Logo from '@/src/features/brand/Logo';
 import Icon, { type IconName } from '@/src/features/ui/Icon';
@@ -23,16 +21,11 @@ export default async function DashboardPage() {
 
   const { profile } = session;
   const name = displayName(profile, session.email);
-  // Role drives the whole view: candidates see interviews they can join; everyone
-  // else (interviewer / hr) sees the interviews they host + scheduling tools.
-  const isCandidate = profile.role === 'candidate';
-  const interviews = isCandidate
-    ? await listAvailableInterviews()
-    : await listInterviewsForInterviewer(session.userId);
+  const interviews = await listInterviewsForInterviewer(session.userId);
 
   return (
     <div className="flex flex-1">
-      <Sidebar name={name} avatarUrl={profile.avatar_url} isCandidate={isCandidate} />
+      <Sidebar name={name} avatarUrl={profile.avatar_url} />
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Mobile top bar */}
@@ -46,18 +39,14 @@ export default async function DashboardPage() {
         </header>
 
         <main className="mx-auto w-full max-w-5xl px-6 py-8">
-          {isCandidate ? (
-            <CandidateDashboard interviews={interviews} name={name} />
-          ) : (
-            <InterviewerDashboard interviews={interviews} name={name} />
-          )}
+          <InterviewerDashboard interviews={interviews} name={name} />
         </main>
       </div>
     </div>
   );
 }
 
-function Sidebar({ name, avatarUrl, isCandidate }: { name: string; avatarUrl: string; isCandidate: boolean }) {
+function Sidebar({ name, avatarUrl }: { name: string; avatarUrl: string }) {
   return (
     <aside className="hidden w-60 shrink-0 flex-col border-r border-line bg-ink2/60 lg:flex">
       <div className="px-5 py-5">
@@ -65,18 +54,14 @@ function Sidebar({ name, avatarUrl, isCandidate }: { name: string; avatarUrl: st
       </div>
 
       <nav className="flex-1 px-3">
-        <NavItem href="/dashboard" icon="dashboard" label={isCandidate ? 'Interviews' : 'Dashboard'} active />
+        <NavItem href="/dashboard" icon="dashboard" label="Dashboard" active />
         <NavItem href="/profile" icon="user" label="Profile" />
         <NavItem href="/interview" icon="code" label="Coding Pad" />
-        {!isCandidate && (
-          <>
-            <p className="px-3 pb-1.5 pt-5 text-[10px] font-semibold uppercase tracking-wider text-faint">
-              More
-            </p>
-            <NavItem icon="users" label="Candidates" soon />
-            <NavItem icon="report" label="Reports" soon />
-          </>
-        )}
+        <p className="px-3 pb-1.5 pt-5 text-[10px] font-semibold uppercase tracking-wider text-faint">
+          More
+        </p>
+        <NavItem icon="users" label="Candidates" soon />
+        <NavItem icon="report" label="Reports" soon />
       </nav>
 
       <div className="border-t border-line p-3">
@@ -105,7 +90,7 @@ function Avatar({ name, url }: { name: string; url: string }) {
     return <img src={url} alt={name} className="h-9 w-9 shrink-0 rounded-full object-cover" />;
   }
   return (
-    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand text-sm font-semibold text-onbrand">
+    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand text-sm font-semibold text-strong">
       {name.charAt(0).toUpperCase()}
     </span>
   );
@@ -169,29 +154,6 @@ function InterviewerDashboard({
 
       <h2 className="mb-3 mt-9 text-lg font-semibold text-strong">Your interviews</h2>
       <InterviewList interviews={interviews} />
-    </>
-  );
-}
-
-function CandidateDashboard({
-  interviews,
-  name,
-}: {
-  interviews: Interview[];
-  name: string;
-}) {
-  return (
-    <>
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-strong">Welcome, {name} 👋</h1>
-        <p className="mt-1 text-sm text-muted">
-          Your upcoming and live interviews. Click Join when it&apos;s time.
-        </p>
-      </div>
-
-      <div className="mt-8">
-        <CandidateInterviews interviews={interviews} />
-      </div>
     </>
   );
 }

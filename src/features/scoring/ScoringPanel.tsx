@@ -116,7 +116,7 @@ export default function ScoringPanel({
                   onClick={() => setScore(c.key, n)}
                   className={`h-7 flex-1 rounded text-xs font-medium transition-colors ${
                     scores[c.key] === n
-                      ? 'bg-gradient-to-r from-brand2 to-brand text-onbrand'
+                      ? 'bg-gradient-to-r from-brand2 to-brand text-white'
                       : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
                   }`}
                   aria-label={`${c.label}: ${n}`}
@@ -147,7 +147,7 @@ export default function ScoringPanel({
       <button
         onClick={handleSubmit}
         disabled={saveState === 'saving'}
-        className="rounded-lg bg-gradient-to-r from-brand2 to-brand px-3 py-2 text-sm font-semibold text-onbrand shadow-lg shadow-brand/20 transition-opacity hover:opacity-90 disabled:opacity-60"
+        className="rounded-lg bg-gradient-to-r from-brand2 to-brand px-3 py-2 text-sm font-semibold text-white shadow-lg shadow-brand/20 transition-opacity hover:opacity-90 disabled:opacity-60"
       >
         {saveState === 'saving' ? 'Saving…' : 'Submit Evaluation'}
       </button>

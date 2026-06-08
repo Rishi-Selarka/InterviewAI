@@ -5,28 +5,16 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type { Interview } from '@/src/features/interviews/server/interviews';
 
-type FilterTab = 'all' | 'scheduled' | 'active' | 'ended' | 'created';
+type FilterTab = 'all' | 'active' | 'ended' | 'created';
 
 const STATUS_STYLES: Record<string, string> = {
   created: 'bg-zinc-500/15 text-fg',
-  scheduled: 'bg-brand/15 text-brandbright',
   active: 'bg-emerald-500/15 text-emerald-300',
-  ended: 'bg-zinc-500/15 text-muted',
+  ended: 'bg-brand/15 text-brandbright',
 };
 
 function interviewDisplayName(iv: Interview): string {
   return iv.title?.trim() || `Interview ${iv.room_id}`;
-}
-
-function fmtSchedule(iso: string | null): string {
-  if (!iso) return '';
-  return new Date(iso).toLocaleString(undefined, {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
 }
 
 export default function InterviewList({ interviews }: { interviews: Interview[] }) {
@@ -36,7 +24,6 @@ export default function InterviewList({ interviews }: { interviews: Interview[] 
 
   const counts: Record<FilterTab, number> = {
     all: interviews.length,
-    scheduled: interviews.filter((i) => i.status === 'scheduled').length,
     active: interviews.filter((i) => i.status === 'active').length,
     ended: interviews.filter((i) => i.status === 'ended').length,
     created: interviews.filter((i) => i.status === 'created').length,
@@ -47,7 +34,6 @@ export default function InterviewList({ interviews }: { interviews: Interview[] 
 
   const tabs: { key: FilterTab; label: string }[] = [
     { key: 'all', label: 'All' },
-    { key: 'scheduled', label: 'Scheduled' },
     { key: 'active', label: 'Active' },
     { key: 'ended', label: 'Ended' },
     { key: 'created', label: 'Created' },
@@ -80,7 +66,7 @@ export default function InterviewList({ interviews }: { interviews: Interview[] 
   return (
     <div>
       {/* Filter cards — clickable count cards that filter the list below. */}
-      <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {tabs.map(({ key, label }) => {
           const selected = activeTab === key;
           return (
@@ -145,9 +131,7 @@ export default function InterviewList({ interviews }: { interviews: Interview[] 
                     )}
                   </div>
                   <span className="mt-0.5 block text-xs text-faint">
-                    {iv.status === 'scheduled' && iv.scheduled_at
-                      ? `Scheduled for ${fmtSchedule(iv.scheduled_at)}`
-                      : new Date(iv.created_at).toLocaleString()}
+                    {new Date(iv.created_at).toLocaleString()}
                   </span>
                 </div>
                 <div className="ml-4 flex shrink-0 items-center gap-2">

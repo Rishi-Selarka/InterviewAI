@@ -166,7 +166,7 @@ create table if not exists public.interviews (
   videosdk_meeting_id text,
   active_problem_id text,
   status text not null default 'created'
-    check (status in ('created', 'active', 'ended', 'scheduled')),
+    check (status in ('created', 'active', 'ended')),
   created_at timestamptz not null default now(),
   started_at timestamptz,
   ended_at timestamptz
@@ -175,15 +175,6 @@ create table if not exists public.interviews (
 -- Human-friendly interview name (e.g. "Frontend screen — Aman"). Additive.
 alter table public.interviews
   add column if not exists title text not null default '';
-
--- Scheduling: optional future start time + a 'scheduled' status. Additive +
--- idempotent: re-point the status CHECK on existing databases to allow 'scheduled'.
-alter table public.interviews
-  add column if not exists scheduled_at timestamptz;
-alter table public.interviews drop constraint if exists interviews_status_check;
-alter table public.interviews
-  add constraint interviews_status_check
-  check (status in ('created', 'active', 'ended', 'scheduled'));
 
 alter table public.interviews enable row level security;
 

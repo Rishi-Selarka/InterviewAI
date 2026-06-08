@@ -15,24 +15,16 @@ export async function POST(request: Request) {
   // ownership (creator => interviewer; whoever opens the invite => candidate).
 
   let title = '';
-  let scheduledAt: string | null = null;
   try {
     const body = await request.json();
     if (typeof body?.title === 'string') title = body.title;
-    if (typeof body?.scheduledAt === 'string' && body.scheduledAt.trim()) {
-      scheduledAt = body.scheduledAt;
-    }
   } catch {
-    /* no body => untitled, unscheduled */
+    /* no body => untitled */
   }
 
   try {
-    const interview = await createInterview(session.userId, title, scheduledAt);
-    return Response.json({
-      id: interview.id,
-      roomId: interview.room_id,
-      status: interview.status,
-    });
+    const interview = await createInterview(session.userId, title);
+    return Response.json({ id: interview.id, roomId: interview.room_id });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return Response.json({ error: message }, { status: 500 });

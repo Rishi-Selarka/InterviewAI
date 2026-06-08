@@ -127,7 +127,7 @@ export default function InterviewerProfileCard({
                 className="w-20 h-20 rounded-full object-cover border-2 border-line"
               />
             ) : (
-              <div className="w-20 h-20 rounded-full bg-brand flex items-center justify-center text-2xl font-bold text-onbrand border-2 border-line select-none">
+              <div className="w-20 h-20 rounded-full bg-brand flex items-center justify-center text-2xl font-bold text-brandbright border-2 border-line select-none">
                 {initials}
               </div>
             )}

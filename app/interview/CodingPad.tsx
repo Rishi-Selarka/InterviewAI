@@ -127,7 +127,7 @@ export default function CodingPad() {
           <button
             onClick={handleRun}
             disabled={isRunning}
-            className="rounded-lg bg-brand px-5 py-1.5 text-sm font-semibold text-onbrand transition-colors hover:bg-brand2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-lg bg-brand px-5 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-brand2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isRunning ? 'Running…' : '▶ Run Code'}
           </button>

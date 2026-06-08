@@ -192,7 +192,7 @@ export default function EditorPanel({ role, name, apiRef }: Props) {
           // mid-run, that flag stays true in persistent Liveblocks Storage and
           // would otherwise disable Run for everyone for the rest of the session.
           disabled={localRunning}
-          className="rounded-lg bg-brand px-5 py-1.5 text-sm font-semibold text-onbrand shadow-lg shadow-brand/20 transition-colors hover:bg-brand2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+          className="rounded-lg bg-brand px-5 py-1.5 text-sm font-semibold text-white shadow-lg shadow-brand/20 transition-colors hover:bg-brand2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
         >
           {busy ? 'Running…' : '▶ Run Code'}
         </button>

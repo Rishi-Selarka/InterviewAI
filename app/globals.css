@@ -4,20 +4,19 @@
    by ~/Documents/suits). Tokens are CSS variables, so the dark/light overrides
    below flip the entire token-based UI. Defaults here = DARK. */
 @theme {
-  --color-ink: #1b0d12;        /* page background */
-  --color-ink2: #241016;       /* alt background */
-  --color-surface: #2e1620;    /* cards / panels */
-  --color-surface2: #3a1d29;   /* raised surfaces / hovers */
-  --color-line: #4a2531;       /* hairline borders */
-  --color-line2: #5e3340;      /* stronger borders */
-  --color-muted: #c9a9b3;      /* secondary text */
-  --color-faint: #9b7a85;      /* tertiary text */
-  --color-fg: #f3e7ea;         /* body text */
+  --color-ink: #0b0b0d;        /* page background */
+  --color-ink2: #131316;       /* alt background */
+  --color-surface: #1b1b1f;    /* cards / panels */
+  --color-surface2: #26262b;   /* raised surfaces / hovers */
+  --color-line: #2a2a30;       /* hairline borders */
+  --color-line2: #3a3a42;      /* stronger borders */
+  --color-muted: #a1a1aa;      /* secondary text */
+  --color-faint: #71717a;      /* tertiary text */
+  --color-fg: #ececf2;         /* body text */
   --color-strong: #ffffff;     /* headings / strong text */
-  --color-brand: #d9a441;      /* champagne gold */
-  --color-brand2: #c08e2e;     /* deeper gold (hover) */
-  --color-brandbright: #f0c878;/* accent text/icons */
-  --color-onbrand: #2a1015;    /* dark text to sit on the gold accent */
+  --color-brand: #e07733;      /* primary orange */
+  --color-brand2: #c85a1e;     /* deeper orange (hover) */
+  --color-brandbright: #f3b07f;/* accent text/icons */
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -27,20 +26,17 @@
 :root,
 [data-theme='dark'] {
   color-scheme: dark;
-  --color-ink: #1b0d12;
-  --color-ink2: #241016;
-  --color-surface: #2e1620;
-  --color-surface2: #3a1d29;
-  --color-line: #4a2531;
-  --color-line2: #5e3340;
-  --color-muted: #c9a9b3;
-  --color-faint: #9b7a85;
-  --color-fg: #f3e7ea;
+  --color-ink: #0b0b0d;
+  --color-ink2: #131316;
+  --color-surface: #1b1b1f;
+  --color-surface2: #26262b;
+  --color-line: #2a2a30;
+  --color-line2: #3a3a42;
+  --color-muted: #a1a1aa;
+  --color-faint: #71717a;
+  --color-fg: #ececf2;
   --color-strong: #ffffff;
-  --color-brand: #d9a441;
-  --color-brand2: #c08e2e;
-  --color-brandbright: #f0c878;
-  --color-onbrand: #2a1015;
+  --color-brandbright: #f3b07f;
 }
 
 /* LIGHT — warm cream surfaces, dark text (the suits light palette).
@@ -50,20 +46,17 @@
 html[data-theme='light'],
 [data-theme='light'] {
   color-scheme: light;
-  --color-ink: #f6f1f0;
-  --color-ink2: #efe6e6;
+  --color-ink: #f7f5ec;
+  --color-ink2: #efece0;
   --color-surface: #ffffff;
-  --color-surface2: #f4ebeb;
-  --color-line: #e6dadc;
-  --color-line2: #d8c8cc;
-  --color-muted: #6b4f57;
-  --color-faint: #927580;
-  --color-fg: #2a1015;
-  --color-strong: #1a0a0d;
-  --color-brand: #b8841f;
-  --color-brand2: #9c6f16;
-  --color-brandbright: #8a5a0f; /* deeper gold for contrast on light */
-  --color-onbrand: #2a1015;
+  --color-surface2: #f2efe5;
+  --color-line: #e6e2d4;
+  --color-line2: #d8d3c2;
+  --color-muted: #6b6757;
+  --color-faint: #908b79;
+  --color-fg: #3a372b;
+  --color-strong: #1b1810;
+  --color-brandbright: #b8541d; /* darker orange for contrast on light */
 }
 
 html,
@@ -87,7 +80,7 @@ body {
   /* Solid, understated primary — orange in both themes. */
   .btn-primary {
     @apply inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-5 py-2.5
-      text-sm font-semibold text-onbrand transition-colors hover:bg-brand2
+      text-sm font-semibold text-white transition-colors hover:bg-brand2
       disabled:cursor-not-allowed disabled:opacity-60;
   }
   .btn-ghost {

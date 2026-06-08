@@ -241,7 +241,7 @@ export default function ProfileForm({ initial, email }: Props) {
               className="h-16 w-16 rounded-full object-cover ring-1 ring-line2"
             />
           ) : (
-            <span className="flex h-16 w-16 items-center justify-center rounded-full bg-brand text-xl font-bold text-onbrand">
+            <span className="flex h-16 w-16 items-center justify-center rounded-full bg-brand text-xl font-bold text-white">
               {(full_name || 'U').charAt(0).toUpperCase()}
             </span>
           )}

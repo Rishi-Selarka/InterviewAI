@@ -6,7 +6,7 @@ import Link from 'next/link';
 export function LogoMark({ className = 'h-8 w-8' }: { className?: string }) {
   return (
     <span
-      className={`relative inline-flex shrink-0 items-center justify-center rounded-xl bg-brand text-onbrand ${className}`}
+      className={`relative inline-flex shrink-0 items-center justify-center rounded-xl bg-brand text-strong ${className}`}
       aria-hidden
     >
       <svg viewBox="0 0 24 24" fill="none" className="h-1/2 w-1/2">
