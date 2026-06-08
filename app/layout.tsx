@@ -25,9 +25,10 @@ export default async function RootLayout({
 }>) {
   // Read the theme from a cookie SERVER-SIDE so React owns the data-theme
   // attribute. This is what makes the choice survive full reloads and OAuth
-  // redirects (the previous localStorage-only approach could revert to dark).
+  // redirects (the previous localStorage-only approach could revert). Default is
+  // LIGHT — only an explicit cookie of 'dark' switches to dark.
   const cookieTheme = (await cookies()).get('intelli_theme')?.value;
-  const theme = cookieTheme === 'light' ? 'light' : 'dark';
+  const theme = cookieTheme === 'dark' ? 'dark' : 'light';
 
   return (
     <html
